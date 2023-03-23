@@ -5,10 +5,14 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "yarn gen:prisma; next dev",
+    "build": "yarn gen:prisma; next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "gen:prisma": "yarn pnpify prisma generate",
+    "migrate:create": "yarn pnpify prisma migrate dev --create-only --name",
+    "migrate:dev": "yarn pnpify prisma migrate dev",
+    "migrate:up": "yarn pnpify prisma migrate deploy"
   },
   "repository": {
     "type": "git",
@@ -26,6 +30,8 @@
   "homepage": "https://github.com/dani-beltran/marketplace#readme",
   "packageManager": "yarn@2.4.3",
   "dependencies": {
+    "@prisma/client": "4.11.0",
+    "@yarnpkg/pnpify": "^4.0.0-rc.40",
     "lodash": "^4.17.21",
     "next": "^13.2.4",
     "react": "^18.2.0",
@@ -35,6 +41,7 @@
     "@types/lodash": "^4.14.191",
     "@types/node": "^18.15.5",
     "@types/react": "^18.0.28",
+    "prisma": "4.11.0",
     "typescript": "^5.0.2"
   }
 }
