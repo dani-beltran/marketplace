@@ -4,7 +4,11 @@
   "description": "A generic marketplace to be used as template.",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "repository": {
     "type": "git",
@@ -22,6 +26,15 @@
   "homepage": "https://github.com/dani-beltran/marketplace#readme",
   "packageManager": "yarn@2.4.3",
   "dependencies": {
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "next": "^13.2.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.191",
+    "@types/node": "^18.15.5",
+    "@types/react": "^18.0.28",
+    "typescript": "^5.0.2"
   }
 }
