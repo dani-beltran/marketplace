@@ -1,0 +1,23 @@
+{
+  "name": "marketplace",
+  "version": "0.1.0",
+  "description": "A generic marketplace to be used as template.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dani-beltran/marketplace.git"
+  },
+  "keywords": [
+    "marketplace",
+    "app"
+  ],
+  "author": "Daniel J.L. Beltran",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dani-beltran/marketplace/issues"
+  },
+  "homepage": "https://github.com/dani-beltran/marketplace#readme"
+}
