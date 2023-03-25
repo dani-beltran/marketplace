@@ -21,6 +21,8 @@ export default async function handler(
       break;
 
       case "POST":
+        // If an account was soft deleted and the email is the same, we could 
+        // reactivate it. However this is not implemented yet.
         // TODO: Validate request body
         try {
           const createdUser = await createUser({...req.body});

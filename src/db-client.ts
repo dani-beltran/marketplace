@@ -1,7 +1,7 @@
 import { PrismaClient } from "@/lib/prisma-client";
 
 const db = new PrismaClient({
-  datasources: {db: {url: process.env.DATABASE_URL}}
+  datasources: { db: { url: process.env.DATABASE_URL } },
 });
 
 // Soft delete middleware for all models
@@ -19,6 +19,20 @@ db.$use(async (params, next) => {
       params.args.data["deleted"] = true;
     } else {
       params.args["data"] = { deletedAt: new Date() };
+    }
+  }
+  if (
+    params.action == "findMany" ||
+    params.action == "findFirst" ||
+    params.action == "findUnique"
+  ) {
+    // Find queries
+    // Add a filter to exclude deleted items
+    params.args = params.args ?? {};
+    if (params.args.where != undefined) {
+      params.args.where["deletedAt"] = null;
+    } else {
+      params.args["where"] = { deletedAt: null };
     }
   }
   return next(params);
