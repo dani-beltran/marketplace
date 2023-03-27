@@ -1,5 +1,5 @@
 import db from '@/db-client';
-import { User } from '@/lib/prisma-client';
+import { User, Prisma } from '@/lib/prisma-client';
 
 export const getUser = async (id: number) => {
   const user = await db.user.findUnique({
@@ -24,7 +24,7 @@ export const getUsers = async () => {
   return users;
 }
 
-export const createUser = async (user: User) => {
+export const createUser = async (user: Prisma.UserCreateInput) => {
   const newUser = await db.user.create({
     data: {
       ...user
