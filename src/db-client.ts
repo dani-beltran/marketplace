@@ -4,8 +4,12 @@ const db = new PrismaClient({
   datasources: { db: { url: process.env.DATABASE_URL } },
 });
 
-// Soft delete middleware for all models
+// Soft delete middleware for some models
 db.$use(async (params, next) => {
+  const softDelModels = ["Contract", "Job"];
+  if (softDelModels.indexOf(params.model?.toString()  ?? "") === -1) {
+    return next(params);
+  }
   if (params.action == "delete") {
     // Delete queries
     // Change action to an update
