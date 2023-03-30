@@ -12,26 +12,29 @@ datasource db {
 }
 
 model User {
-  id        Int        @id @default(autoincrement())
-  email     String     @unique
-  name      String?
-  role      String
-  password  String
-  contracts Contract[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @default(now()) @updatedAt
-  deletedAt DateTime?
+  id                    Int        @id @default(autoincrement())
+  email                 String     @unique
+  name                  String?
+  role                  String
+  password              String
+  contractsAsContractor Contract[] @relation("contractor")
+  contractsAsClient     Contract[] @relation("client")
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @default(now()) @updatedAt
+  deletedAt             DateTime?
 }
 
 model Contract {
-  id        Int       @id @default(autoincrement())
-  name      String
-  user      User      @relation(fields: [userId], references: [id])
-  userId    Int
-  jobs      Job[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now()) @updatedAt
-  deletedAt DateTime?
+  id           Int       @id @default(autoincrement())
+  name         String
+  contractor   User      @relation("contractor", fields: [contractorId], references: [id])
+  contractorId Int
+  client       User      @relation("client", fields: [clientId], references: [id])
+  clientId     Int
+  jobs         Job[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+  deletedAt    DateTime?
 }
 
 model Job {
