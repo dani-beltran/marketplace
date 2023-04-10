@@ -64,14 +64,22 @@ model VerificationToken {
 model Contract {
   id           Int       @id @default(autoincrement())
   name         String
+  terms        String
+  status       String
+  startDate    DateTime
+  endDate      DateTime
+  hourlyRate   String?
+  hoursPerWeek Int?
+  totalHours   Int?
+  totalCost    String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+  deletedAt    DateTime?
   contractor   User      @relation("contractor", fields: [contractorId], references: [id])
   contractorId Int
   client       User      @relation("client", fields: [clientId], references: [id])
   clientId     Int
   jobs         Job[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @default(now()) @updatedAt
-  deletedAt    DateTime?
 }
 
 model Job {

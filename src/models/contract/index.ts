@@ -1,4 +1,5 @@
 import db from '@/db-client';
+import { Contract, Prisma } from '@/lib/prisma-client';
 
 /**
  * @returns all contracts for a given user independently of whether they are 
@@ -40,4 +41,26 @@ export const getUserContractsAsContractor = async (userId: number) => {
     },
   });
   return contracts;
+}
+
+export const createContract = async (contract: Prisma.ContractCreateInput) => {
+  const newContract = await db.contract.create({
+    data: contract,
+  });
+  return newContract;
+}
+
+export const updateContract = async (contract: Contract) => {
+  const updatedContract = await db.contract.update({
+    where: { id: contract.id },
+    data: contract,
+  });
+  return updatedContract;
+}
+
+export const deleteContract = async (contractId: number) => {
+  const deletedContract = await db.contract.delete({
+    where: { id: contractId },
+  });
+  return deletedContract;
 }

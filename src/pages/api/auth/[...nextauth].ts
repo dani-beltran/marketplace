@@ -17,8 +17,8 @@ export default NextAuth({
       return true;
     },
     async redirect({ url, baseUrl }) {
-      // The redirect callback is called anytime the user is redirected to a 
-      // callback URL (e.g. on signin or signout).
+      // The redirect callback is called anytime the user is redirected to a
+      // callback URL (e.g. on sign in or sign out).
       // Allows relative callback URLs
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       // Allows callback URLs on the same origin
@@ -34,5 +34,5 @@ export default NextAuth({
       return session;
     },
   },
-  secret: process.env.JWT_SECRET!,
+  secret: process.env.NEXTAUTH_SECRET!,
 });
