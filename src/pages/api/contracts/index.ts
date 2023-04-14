@@ -3,8 +3,10 @@ import { createContract, getUserContracts } from "@/models/contract";
 import { log } from "@/utils/logging";
 import { isMissingRelatedRecord } from "@/utils/db-helpers";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { object, string, ValidationError, number, date } from "yup";
+import { object, string, ValidationError, number, date, InferType } from "yup";
 import { getToken } from "next-auth/jwt";
+import { runController } from "@/utils/controller";
+import ActError from "@/utils/ActError";
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,26 +22,21 @@ export default async function handler(
       // TODO: Handle filtering
       // TODO: Handle search
       // TODO: Filter deleted out
-
-      // TODO get user id from session
-      const userId = Number((await getToken({ req }))?.userId);
-      if (!userId || Number.isNaN(userId)) {
-        res
-          .status(401)
-          .json({
-            name: "Unauthorized",
-            message: "You must be logged in to access this resource.",
-          });
-        return;
-      }
-      const contracts = await getUserContracts(userId);
-      res.status(200).json(contracts);
+      await runController({
+        authentication: true,
+        req,
+        res,
+        action: async (req) => {
+          const userId = Number(req.headers.userId);
+          const contracts = await getUserContracts(userId);
+          return contracts;
+        }
+      });
       break;
 
     case "POST":
       const contractSchema = object({
         name: string().required(),
-        contractorId: number().required(),
         clientId: number().required(),
         terms: string().required(),
         startDate: date().required(),
@@ -50,48 +47,38 @@ export default async function handler(
         totalCost: string().required(),
         status: string().required(),
       });
-      try {
-        const contract = await contractSchema.validate(body, {
-          abortEarly: true,
-        });
-        const createdContract = await createContract({
-          name: contract.name,
-          terms: contract.terms,
-          totalCost: contract.totalCost,
-          status: contract.status,
-          hourlyRate: contract.hourlyRate,
-          hoursPerWeek: contract.hoursPerWeek,
-          totalHours: contract.totalHours,
-          startDate: new Date(contract.startDate),
-          endDate: new Date(contract.endDate),
-          client: { connect: { id: contract.clientId } },
-          contractor: { connect: { id: contract.contractorId } },
-        });
-        res.status(200).json(createdContract);
-      } catch (e) {
-        if (e instanceof ValidationError) {
-          res.status(400).json({
-            name: "ValidationError",
-            message: e.message,
+      type ContractInput = InferType<typeof contractSchema>;
+      await runController({
+        authentication: true,
+        validation: {
+          schema: contractSchema,
+        },
+        req,
+        res,
+        action: async (req) => {
+          // Only the logged in contractor can create a contract for a client
+          const contractorId = Number(req.headers.userId);
+          const contract = req.body as ContractInput;
+          // Can't create a contract for yourself
+          if (contractorId === contract.clientId) {
+            throw new ActError('BadRequest', 'You cannot create a contract for yourself.');
+          }
+          const createdContract = await createContract({
+            name: contract.name,
+            terms: contract.terms,
+            totalCost: contract.totalCost,
+            status: contract.status,
+            hourlyRate: contract.hourlyRate,
+            hoursPerWeek: contract.hoursPerWeek,
+            totalHours: contract.totalHours,
+            startDate: new Date(contract.startDate),
+            endDate: new Date(contract.endDate),
+            client: { connect: { id: contract.clientId } },
+            contractor: { connect: { id:  contractorId } },
           });
-          return;
-        }
-        if (
-          e instanceof Prisma.PrismaClientKnownRequestError &&
-          isMissingRelatedRecord(e)
-        ) {
-          log("MissingRelatedRecord", e.message);
-          res.status(400).json({
-            name: "MissingRelatedRecord",
-            message: "One or more of the related records does not exist.",
-          });
-          return;
-        }
-        const error = e as Error;
-        log("Unexpected", error.message);
-        res.status(500).json(error);
-        return;
-      }
+          return createdContract;
+        },
+      });
       break;
 
     default:

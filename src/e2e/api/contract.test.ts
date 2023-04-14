@@ -89,7 +89,6 @@ describe("POST contract", () => {
   let contractorUser: User;
 
   beforeAll(async () => {
-    // await flushDB();
     clientUser = await createUser(
       getMockUser({
         email: "client@e2etestmail.com",
@@ -109,6 +108,45 @@ describe("POST contract", () => {
     await deleteTestData(clientUser, contractorUser);
   });
 
+  it("returns a 401 response when the request is not authenticated", async () => {
+    try {
+      await httpRequest.post(endpointUrl, {});
+      expect(true).toBe(false);
+    } catch (error) {
+      expect((<AxiosError>error).response?.status).toBe(401);
+      expect((<AxiosError>error).response?.data).toStrictEqual({
+        name: "Unauthorized",
+        message: "You must be logged in to access this resource.",
+      });
+    }
+  });
+
+  it("returns a 400 response when creating a contract for yourself", async () => {
+    const body = {
+      status: "active",
+      terms: "none",
+      totalCost: "$100",
+      endDate: "2023-04-30",
+      startDate: "2023-03-30",
+      clientId: contractorUser.id,
+      name: "A test contract",
+    };
+    try {
+      await httpRequest.post(endpointUrl, body, {
+        headers: {
+          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+        },
+      });
+      expect(true).toBe(false);
+    } catch (error) {
+      expect((<AxiosError>error).response?.status).toBe(400);
+      expect((<AxiosError>error).response?.data).toStrictEqual({
+        message: "You cannot create a contract for yourself.",
+        name: "BadRequest",
+      });
+    }
+  });
+
   it("returns a 200 response and the ID of the newly created contract", async () => {
     const body = {
       status: "active",
@@ -117,10 +155,13 @@ describe("POST contract", () => {
       endDate: "2023-04-30",
       startDate: "2023-03-30",
       clientId: clientUser.id,
-      contractorId: contractorUser.id,
       name: "A test contract",
     };
-    const response = await httpRequest.post(endpointUrl, body);
+    const response = await httpRequest.post(endpointUrl, body, {
+      headers: {
+        Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+      },
+    });
     expect(response.status).toBe(200);
     expect(response.data.id).toBeDefined();
   });
@@ -136,7 +177,11 @@ describe("POST contract", () => {
       contractorId: contractorUser.id,
     };
     try {
-      await httpRequest.post(endpointUrl, body);
+      await httpRequest.post(endpointUrl, body,  {
+        headers: {
+          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+        },
+      });
       expect(true).toBe(false);
     } catch (error) {
       expect((<AxiosError>error).response?.status).toBe(400);
@@ -158,34 +203,16 @@ describe("POST contract", () => {
       name: "A test contract",
     };
     try {
-      await httpRequest.post(endpointUrl, body);
+      await httpRequest.post(endpointUrl, body, {
+        headers: {
+          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+        },
+      });
       expect(true).toBe(false);
     } catch (error) {
       expect((<AxiosError>error).response?.status).toBe(400);
       expect((<AxiosError>error).response?.data).toStrictEqual({
         message: "clientId is a required field",
-        name: "ValidationError",
-      });
-    }
-  });
-
-  it("returns a 400 response when the request body is missing contractorId", async () => {
-    const body = {
-      status: "active",
-      terms: "none",
-      totalCost: "$100",
-      endDate: "2023-04-30",
-      startDate: "2023-03-30",
-      clientId: clientUser.id,
-      name: "A test contract",
-    };
-    try {
-      await httpRequest.post(endpointUrl, body);
-      expect(true).toBe(false);
-    } catch (error) {
-      expect((<AxiosError>error).response?.status).toBe(400);
-      expect((<AxiosError>error).response?.data).toStrictEqual({
-        message: "contractorId is a required field",
         name: "ValidationError",
       });
     }
@@ -202,7 +229,11 @@ describe("POST contract", () => {
       name: "A test contract",
     };
     try {
-      await httpRequest.post(endpointUrl, body);
+      await httpRequest.post(endpointUrl, body, {
+        headers: {
+          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+        },
+      });
       expect(true).toBe(false);
     } catch (error) {
       expect((<AxiosError>error).response?.status).toBe(400);
@@ -224,7 +255,11 @@ describe("POST contract", () => {
       name: "A test contract",
     };
     try {
-      await httpRequest.post(endpointUrl, body);
+      await httpRequest.post(endpointUrl, body, {
+        headers: {
+          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+        },
+      });
       expect(true).toBe(false);
     } catch (error) {
       expect((<AxiosError>error).response?.status).toBe(400);
@@ -246,7 +281,11 @@ describe("POST contract", () => {
       name: "A test contract",
     };
     try {
-      await httpRequest.post(endpointUrl, body);
+      await httpRequest.post(endpointUrl, body, {
+        headers: {
+          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+        },
+      });
       expect(true).toBe(false);
     } catch (error) {
       expect((<AxiosError>error).response?.status).toBe(400);
@@ -268,7 +307,11 @@ describe("POST contract", () => {
       name: "A test contract",
     };
     try {
-      await httpRequest.post(endpointUrl, body);
+      await httpRequest.post(endpointUrl, body, {
+        headers: {
+          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+        },
+      });
       expect(true).toBe(false);
     } catch (error) {
       expect((<AxiosError>error).response?.status).toBe(400);
@@ -290,7 +333,11 @@ describe("POST contract", () => {
       name: "A test contract",
     };
     try {
-      await httpRequest.post(endpointUrl, body);
+      await httpRequest.post(endpointUrl, body, {
+        headers: {
+          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+        },
+      });
       expect(true).toBe(false);
     } catch (error) {
       expect((<AxiosError>error).response?.status).toBe(400);
