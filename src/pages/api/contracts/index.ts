@@ -12,15 +12,15 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Contract | Contract[] | Error>
 ) {
-  const { query, body, method } = req;
+  const { method } = req;
 
   switch (method) {
+    // TODO: Validate query params
+    // TODO: Handle pagination
+    // TODO: Handle sorting
+    // TODO: Handle filtering
+    // TODO: Handle search
     case "GET":
-      // TODO: Validate query params
-      // TODO: Handle pagination
-      // TODO: Handle sorting
-      // TODO: Handle filtering
-      // TODO: Handle search
       await runController({
         authentication: true,
         req,
@@ -29,7 +29,7 @@ export default async function handler(
           const userId = Number(req.headers.userId);
           const contracts = await getUserContracts(userId);
           return contracts;
-        }
+        },
       });
       break;
 
@@ -60,7 +60,10 @@ export default async function handler(
           const contract = req.body as ContractInput;
           // Can't create a contract for yourself
           if (contractorId === contract.clientId) {
-            throw new ActError('BadRequest', 'You cannot create a contract for yourself.');
+            throw new ActError(
+              "BadRequest",
+              "You cannot create a contract for yourself."
+            );
           }
           const createdContract = await createContract({
             name: contract.name,
@@ -73,7 +76,7 @@ export default async function handler(
             startDate: new Date(contract.startDate),
             endDate: new Date(contract.endDate),
             client: { connect: { id: contract.clientId } },
-            contractor: { connect: { id:  contractorId } },
+            contractor: { connect: { id: contractorId } },
           });
           return createdContract;
         },
