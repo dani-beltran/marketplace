@@ -21,7 +21,6 @@ export default async function handler(
       // TODO: Handle sorting
       // TODO: Handle filtering
       // TODO: Handle search
-      // TODO: Filter deleted out
       await runController({
         authentication: true,
         req,
@@ -56,7 +55,7 @@ export default async function handler(
         req,
         res,
         action: async (req) => {
-          // Only the logged in contractor can create a contract for a client
+          // Only the logged-in contractor can create a contract for a client
           const contractorId = Number(req.headers.userId);
           const contract = req.body as ContractInput;
           // Can't create a contract for yourself

@@ -53,6 +53,14 @@ describe("GET contract", () => {
         name: "A test contract 3",
       })
     );
+    await createContract(
+      getMockContract({
+        clientId: clientUser.id,
+        contractorId: contractorUser.id,
+        deletedAt: new Date(),
+        name: "A deleted test contract",
+      })
+    );
   });
 
   afterAll(async () => {
@@ -74,6 +82,7 @@ describe("GET contract", () => {
   });
 
   it("returns a 200 response and a list of contracts for the requester user", async () => {
+    // This test also tests that the contracts with deletedAt field are ignored
     const response = await httpRequest.get(endpointUrl, {
       headers: {
         Authorization: `Bearer ${await genBearerToken(clientUser.id)}`,
