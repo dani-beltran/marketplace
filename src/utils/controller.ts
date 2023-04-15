@@ -7,7 +7,7 @@ import { isMissingRelatedRecord } from "./db-helpers";
 import { Dictionary } from "lodash";
 import ActError from "./ActError";
 
-type ControllerParams = {
+type ControllerParams<T, K> = {
   authentication?: boolean;
   validation?: {
     schema: ObjectSchema<any>;
@@ -15,7 +15,9 @@ type ControllerParams = {
   };
   req: NextApiRequest;
   res: NextApiResponse;
-  action: (req: NextApiRequest) => Promise<Dictionary<any>>;
+  action: (
+    req: Omit<NextApiRequest, "body"> & { body: T }
+  ) => Promise<K>;
 };
 
 /**
@@ -28,13 +30,13 @@ type ControllerParams = {
  * @param res The response object
  * @param action The action to run
  */
-export const runController = async ({
+export const runController = async <Input = unknown, Output = Dictionary<unknown>>({
   authentication,
   validation,
   req,
   res,
   action,
-}: ControllerParams) => {
+}: ControllerParams<Input, Output>): Promise<void> => {
   // userId header is reserved for authentication results.
   delete req.headers.userId;
   // If authentication is required, get the user id from the session
@@ -92,7 +94,7 @@ export const runController = async ({
       return;
     }
     // Catch ActErrors and return them as JSON
-    if ( e instanceof ActError) {
+    if (e instanceof ActError) {
       res.status(e.getStatus()).json(e.toJSON());
       return;
     }
