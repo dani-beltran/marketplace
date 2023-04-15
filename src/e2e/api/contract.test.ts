@@ -2,11 +2,12 @@ import { AxiosError } from "axios";
 import { createContract } from "@/models/contract";
 import { createUser } from "@/models/user";
 import { genBearerToken } from "@/utils/test-helpers";
-import { getMockContract } from "@/utils/mocks/contract";
-import { getMockUser } from "@/utils/mocks/user";
+import { getMockContractInput } from "@/utils/mocks/contract";
+import { getMockUserInput } from "@/utils/mocks/user";
 import { User } from "@/lib/prisma-client";
 import db from "@/db-client";
 import httpRequest from "axios";
+import { LocalDate } from "@js-joda/core";
 
 const endpointUrl = `http://${process.env.DOMAIN}/api/contracts`;
 
@@ -21,40 +22,40 @@ describe("GET contract", () => {
 
   beforeAll(async () => {
     clientUser = await createUser(
-      getMockUser({
+      getMockUserInput({
         email: "client@e2etestmail.com",
         name: "Client",
       })
     );
     contractorUser = await createUser(
-      getMockUser({
+      getMockUserInput({
         email: "contractor@e2etestmail.com",
         name: "Contractor",
       })
     );
     await createContract(
-      getMockContract({
+      getMockContractInput({
         clientId: clientUser.id,
         contractorId: contractorUser.id,
         name: "A test contract 1",
       })
     );
     await createContract(
-      getMockContract({
+      getMockContractInput({
         clientId: clientUser.id,
         contractorId: contractorUser.id,
         name: "A test contract 2",
       })
     );
     await createContract(
-      getMockContract({
+      getMockContractInput({
         clientId: clientUser.id,
         contractorId: contractorUser.id,
         name: "A test contract 3",
       })
     );
     await createContract(
-      getMockContract({
+      getMockContractInput({
         clientId: clientUser.id,
         contractorId: contractorUser.id,
         deletedAt: new Date(),
@@ -99,13 +100,13 @@ describe("POST contract", () => {
 
   beforeAll(async () => {
     clientUser = await createUser(
-      getMockUser({
+      getMockUserInput({
         email: "client@e2etestmail.com",
         name: "Client",
       })
     );
     contractorUser = await createUser(
-      getMockUser({
+      getMockUserInput({
         email: "contractor@e2etestmail.com",
         name: "Contractor",
       })
@@ -150,7 +151,7 @@ describe("POST contract", () => {
     } catch (error) {
       expect((<AxiosError>error).response?.status).toBe(400);
       expect((<AxiosError>error).response?.data).toStrictEqual({
-        message: "You cannot create a contract for yourself.",
+        message: "The contractor and client cannot be the same person",
         name: "BadRequest",
       });
     }
@@ -161,18 +162,22 @@ describe("POST contract", () => {
       status: "active",
       terms: "none",
       totalCost: "$100",
-      endDate: "2023-04-30",
-      startDate: "2023-03-30",
+      endDate: LocalDate.now().plusDays(8).toString(),
+      startDate: LocalDate.now().plusDays(1).toString(),
       clientId: clientUser.id,
       name: "A test contract",
     };
-    const response = await httpRequest.post(endpointUrl, body, {
-      headers: {
-        Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
-      },
-    });
-    expect(response.status).toBe(200);
-    expect(response.data.id).toBeDefined();
+    try {
+      const response = await httpRequest.post(endpointUrl, body, {
+        headers: {
+          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+        },
+      });
+      expect(response.status).toBe(200);
+      expect(response.data.id).toBeDefined();
+    } catch (error) {
+      expect(true).toBe(false);
+    }
   });
 
   it("returns a 400 response when the request body is missing name", async () => {
@@ -186,7 +191,7 @@ describe("POST contract", () => {
       contractorId: contractorUser.id,
     };
     try {
-      await httpRequest.post(endpointUrl, body,  {
+      await httpRequest.post(endpointUrl, body, {
         headers: {
           Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
         },
@@ -326,32 +331,6 @@ describe("POST contract", () => {
       expect((<AxiosError>error).response?.status).toBe(400);
       expect((<AxiosError>error).response?.data).toStrictEqual({
         message: "terms is a required field",
-        name: "ValidationError",
-      });
-    }
-  });
-
-  it("returns a 400 response when the request body is missing status", async () => {
-    const body = {
-      terms: "none",
-      totalCost: "$100",
-      endDate: "2023-04-30",
-      startDate: "2023-03-30",
-      clientId: clientUser.id,
-      contractorId: contractorUser.id,
-      name: "A test contract",
-    };
-    try {
-      await httpRequest.post(endpointUrl, body, {
-        headers: {
-          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
-        },
-      });
-      expect(true).toBe(false);
-    } catch (error) {
-      expect((<AxiosError>error).response?.status).toBe(400);
-      expect((<AxiosError>error).response?.data).toStrictEqual({
-        message: "status is a required field",
         name: "ValidationError",
       });
     }

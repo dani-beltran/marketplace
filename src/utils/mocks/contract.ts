@@ -5,19 +5,20 @@
 //
 
 import type { Prisma } from "@/lib/prisma-client";
+import { LocalDate } from "@js-joda/core";
 
 type Relations = Partial<{ contractorId: number; clientId: number }>;
 
-export const getMockContract = (
+export const getMockContractInput = (
   overrides: Partial<Prisma.ContractCreateInput> & Relations = {}
 ) => {
   const contract: Prisma.ContractCreateInput = {
     name: "Mock Contract 1",
     contractor: { connect: { id: overrides.contractorId ?? 1 } },
-    client: { connect: { id: overrides.clientId ?? 1 } },
+    client: { connect: { id: overrides.clientId ?? 2 } },
     terms: "Mock Terms",
-    startDate: new Date(),
-    endDate: new Date(),
+    startDate: new Date(LocalDate.now().toString()),
+    endDate: new Date(LocalDate.now().plusDays(7).toString()),
     hourlyRate: "100",
     hoursPerWeek: 40,
     totalHours: 100,

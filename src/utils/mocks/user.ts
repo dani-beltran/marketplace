@@ -6,7 +6,7 @@
 
 import type { Prisma } from "@/lib/prisma-client";
 
-export const getMockUser = (
+export const getMockUserInput = (
   overrides: Partial<Prisma.UserCreateInput> = {}
 ) => {
   const user: Prisma.UserCreateInput = {
