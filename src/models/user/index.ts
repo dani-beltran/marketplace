@@ -19,8 +19,12 @@ export const getUserByEmail = async (email: string) => {
   return user;
 }
 
-export const getUsers = async () => {
-  const users = await db.user.findMany()
+type getUserArgs = {
+  select?: Prisma.UserSelect
+}
+
+export const getUsers = async ({select}: getUserArgs) => {
+  const users = await db.user.findMany({select})
   return users;
 }
 

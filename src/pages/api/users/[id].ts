@@ -1,5 +1,7 @@
 import { User } from "@/lib/prisma-client";
-import { deleteUser, getUser, updateUser } from "@/models/user";
+import { deleteUser, getUser } from "@/models/user";
+import ActError from "@/utils/ActError";
+import { runController } from "@/utils/controller";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function userHandler(
@@ -11,32 +13,52 @@ export default async function userHandler(
 
   switch (method) {
     case "GET":
-      const user = await getUser(id);
-      if (!user) {
-        res
-          .status(404)
-          .json({
-            message: `User with id ${id} not found`,
-            name: "UserNotFound",
-          });
-        return;
-      }
-      res.status(200).json(user);
-      break;
-
-    case "PUT":
-      // TODO: Validate request body
-      const updatedUser = await updateUser({...req.body, id});
-      res.status(200).json(updatedUser);
+      await runController({
+        authentication: true,
+        req,
+        res,
+        action: async () => {
+          const user = await getUser(id);
+          if (!user) {
+            throw new ActError("NotFound", `User with id ${id} not found`);
+          }
+          // Only the user can see all if their own data
+          if (id === Number(req.headers.userId)) {
+            return user;
+          } else {
+            return {
+              id: user.id,
+              name: user.name,
+              image: user.image,
+            };
+          }
+        },
+      });
       break;
 
     case "DELETE":
-      const deletedUser = await deleteUser(id);
-      res.status(200).json(deletedUser);
+      await runController({
+        authentication: true,
+        req,
+        res,
+        action: async () => {
+          // Only the user can delete its own account
+          if (id !== Number(req.headers.userId)) {
+            throw new ActError(
+              "Forbidden",
+              `You are not authorized to delete this user`
+            );
+          }
+          const deletedUser = await deleteUser(id);
+          return deletedUser;
+        },
+      });
       break;
 
     default:
-      res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
+      // Create and Update are not allowed for users since they are managed by 
+      // the auth service
+      res.setHeader("Allow", ["GET", "DELETE"]);
       res.status(405).end(`Method ${method} Not Allowed`);
   }
 }

@@ -37,7 +37,8 @@ export const runController = async <Input = unknown, Output = Dictionary<unknown
   res,
   action,
 }: ControllerParams<Input, Output>): Promise<void> => {
-  // userId header is reserved for authentication results.
+  // userId header is reserved for authentication results, whatever is coming from
+  // the client should be removed to prevent abuse.
   delete req.headers.userId;
   // If authentication is required, get the user id from the session
   if (authentication) {
@@ -86,10 +87,17 @@ export const runController = async <Input = unknown, Output = Dictionary<unknown
       e instanceof Prisma.PrismaClientKnownRequestError &&
       isMissingRelatedRecord(e)
     ) {
-      log("MissingRelatedRecord", e.message);
+      // log("MissingRelatedRecord", e.message);
+      if (req.method === "DELETE") {
+        res.status(404).json({
+          name: "NotFound",
+          message: "The record does not exist",
+        });
+        return;
+      }
       res.status(400).json({
         name: "MissingRelatedRecord",
-        message: "One or more of the related records does not exist.",
+        message: "One or more of the related records does not exist",
       });
       return;
     }
