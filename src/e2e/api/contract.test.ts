@@ -10,10 +10,11 @@ import httpRequest from "axios";
 import { LocalDate } from "@js-joda/core";
 
 const endpointUrl = `http://${process.env.DOMAIN}/api/contracts`;
+const namingPrefix = 'contract-e2etest-'
 
 const deleteTestData = async (clientUser: User, contractorUser: User) => {
   await db.$queryRaw`DELETE FROM "Contract" WHERE "clientId" = ${clientUser.id} OR "contractorId" = ${contractorUser.id}`;
-  await db.$queryRaw`DELETE FROM "User" WHERE email LIKE '%e2etestmail.com%'`;
+  await db.$queryRaw`DELETE FROM "User" WHERE email = ${clientUser.email} OR email = ${contractorUser.email}`;
 };
 
 describe("GET contract", () => {
@@ -23,14 +24,14 @@ describe("GET contract", () => {
   beforeAll(async () => {
     clientUser = await createUser(
       getMockUserInput({
-        email: "client@e2etestmail.com",
-        name: "Client",
+        email: `${namingPrefix}client@testmail.com`,
+        name: `${namingPrefix}client`,
       })
     );
     contractorUser = await createUser(
       getMockUserInput({
-        email: "contractor@e2etestmail.com",
-        name: "Contractor",
+        email: `${namingPrefix}contractor@testmail.com`,
+        name: `${namingPrefix}contractor`,
       })
     );
     await createContract(
@@ -101,14 +102,14 @@ describe("POST contract", () => {
   beforeAll(async () => {
     clientUser = await createUser(
       getMockUserInput({
-        email: "client@e2etestmail.com",
-        name: "Client",
+        email: `${namingPrefix}client@testmail.com`,
+        name: `${namingPrefix}client`,
       })
     );
     contractorUser = await createUser(
       getMockUserInput({
-        email: "contractor@e2etestmail.com",
-        name: "Contractor",
+        email: `${namingPrefix}contractor@testmail.com`,
+        name: `${namingPrefix}contractor`,
       })
     );
   });
@@ -332,6 +333,33 @@ describe("POST contract", () => {
       expect((<AxiosError>error).response?.data).toStrictEqual({
         message: "terms is a required field",
         name: "ValidationError",
+      });
+    }
+  });
+
+  it("returns a 400 response when the clientId points to a non existing user", async () => {
+    const body = {
+      status: "active",
+      terms: "none",
+      totalCost: "$100",
+      endDate: LocalDate.now().plusDays(8).toString(),
+      startDate: LocalDate.now().plusDays(1).toString(),
+      clientId: 99999999,
+      name: "A test contract",
+    };
+    try {
+      await httpRequest.post(endpointUrl, body, {
+        headers: {
+          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+        },
+      });
+      expect(true).toBe(false);
+      
+    } catch (error) {
+      expect((<AxiosError>error).response?.status).toBe(400);
+      expect((<AxiosError>error).response?.data).toStrictEqual({
+        message: "One or more of the related records does not exist",
+        name: "MissingRelatedRecord",
       });
     }
   });
