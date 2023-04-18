@@ -49,6 +49,7 @@ model User {
   deletedAt             DateTime?
   contractsAsContractor Contract[] @relation("contractor")
   contractsAsClient     Contract[] @relation("client")
+  postedJobs            Job[]
   accounts              Account[]
   sessions              Session[]
 }
@@ -79,15 +80,18 @@ model Contract {
   contractorId Int
   client       User      @relation("client", fields: [clientId], references: [id])
   clientId     Int
-  jobs         Job[]
+  job          Job       @relation(fields: [jobId], references: [id])
+  jobId        Int       @unique
 }
 
 model Job {
-  id         Int       @id @default(autoincrement())
-  name       String
-  contract   Contract  @relation(fields: [contractId], references: [id])
-  contractId Int
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @default(now()) @updatedAt
-  deletedAt  DateTime?
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+  deletedAt   DateTime?
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  contract    Contract?
 }

@@ -11,6 +11,7 @@ import { LocalDate } from "@js-joda/core";
 import currency from "currency.js";
 
 /**
+ * TODO: Add pagination
  * @returns all contracts for a given user independently of whether they are
  * the client or the contractor.
  * @param userId The user ID
@@ -25,7 +26,7 @@ export const getUserContracts = async (userId: number) => {
 };
 
 /**
- *
+ * TODO: Add pagination
  * @param userId The user ID
  * @returns all contracts where the user is the client
  */
@@ -39,7 +40,7 @@ export const getUserContractsAsClient = async (userId: number) => {
 };
 
 /**
- *
+ * TODO: Add pagination
  * @param userId The user ID
  * @returns all the contracts where the user is the contractor
  */

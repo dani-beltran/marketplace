@@ -42,6 +42,7 @@ export default async function handler(
         hoursPerWeek: number(),
         totalHours: number(),
         totalCost: string().required(),
+        jobId: number().required(),
       });
       type ContractInput = InferType<typeof contractSchema>;
       await runController<ContractInput, Contract>({
@@ -68,6 +69,7 @@ export default async function handler(
             endDate: body.endDate,
             client: { connect: { id: body.clientId } },
             contractor: { connect: { id: contractorId } },
+            job: { connect: { id: body.jobId } },
           };
           validateContractInput(contractInput);
           // Create the contract and return it

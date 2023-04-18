@@ -3,11 +3,15 @@ import { getToken } from "next-auth/jwt";
 import { ObjectSchema, ValidationError } from "yup";
 import { log } from "./logging";
 import { Prisma } from "@/lib/prisma-client";
-import { isMissingRelatedRecord } from "./db-helpers";
+import {
+  isForeignKeyConstraintViolation,
+  isMissingRelatedRecord,
+  isUniqueConstraintViolation,
+} from "./db-helpers";
 import { Dictionary } from "lodash";
 import ActError from "./ActError";
 
-type ControllerParams<T, K> = {
+type ControllerParams<T_Input, T_Output> = {
   authentication?: boolean;
   validation?: {
     schema: ObjectSchema<any>;
@@ -15,9 +19,7 @@ type ControllerParams<T, K> = {
   };
   req: NextApiRequest;
   res: NextApiResponse;
-  action: (
-    req: Omit<NextApiRequest, "body"> & { body: T }
-  ) => Promise<K>;
+  action: (req: Omit<NextApiRequest, "body"> & { body: T_Input }) => Promise<T_Output>;
 };
 
 /**
@@ -30,13 +32,16 @@ type ControllerParams<T, K> = {
  * @param res The response object
  * @param action The action to run
  */
-export const runController = async <Input = unknown, Output = Dictionary<unknown>>({
+export const runController = async <
+  T_Input = unknown,
+  T_Output = Dictionary<unknown>
+>({
   authentication,
   validation,
   req,
   res,
   action,
-}: ControllerParams<Input, Output>): Promise<void> => {
+}: ControllerParams<T_Input, T_Output>): Promise<void> => {
   // userId header is reserved for authentication results, whatever is coming from
   // the client should be removed to prevent abuse.
   delete req.headers.userId;
@@ -82,12 +87,24 @@ export const runController = async <Input = unknown, Output = Dictionary<unknown
     const resBody = await action(req);
     res.status(200).json(resBody);
   } catch (e) {
+    // Return 409 when a foreign key constraint violation occurs
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      (isForeignKeyConstraintViolation(e) || isUniqueConstraintViolation(e))
+    ) {
+      log("ForeignKeyConstraintViolation", e.message);
+      res.status(409).json({
+        name: "ForeignKeyConstraintViolation",
+        message: "Violates a foreign key constraint, like uniqueness",
+      });
+      return;
+    }
     // Return 400 when a missing related record error occurs
     if (
       e instanceof Prisma.PrismaClientKnownRequestError &&
       isMissingRelatedRecord(e)
     ) {
-      // log("MissingRelatedRecord", e.message);
+      log("MissingRelatedRecord", e.message);
       if (req.method === "DELETE") {
         res.status(404).json({
           name: "NotFound",

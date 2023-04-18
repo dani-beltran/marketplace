@@ -15,3 +15,11 @@ export const isUniqueConstraintViolation = (
     return true;
   }
 };
+
+export const isForeignKeyConstraintViolation = (
+  e: Prisma.PrismaClientKnownRequestError
+) => {
+  if (e.code === "P2014") {
+    return true;
+  }
+}

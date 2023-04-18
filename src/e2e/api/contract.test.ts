@@ -4,17 +4,20 @@ import { createUser } from "@/models/user";
 import { genBearerToken } from "@/utils/test-helpers";
 import { getMockContractInput } from "@/utils/mocks/contract";
 import { getMockUserInput } from "@/utils/mocks/user";
-import { User } from "@/lib/prisma-client";
+import { Job, User } from "@/lib/prisma-client";
 import db from "@/db-client";
 import httpRequest from "axios";
 import { LocalDate } from "@js-joda/core";
+import { createJob } from "@/models/job";
+import { getMockJobInput } from "@/utils/mocks/job";
 
 const endpointUrl = `http://${process.env.DOMAIN}/api/contracts`;
-const namingPrefix = 'contract-e2etest-'
+const namingPrefix = "contract-e2etest-";
 
 const deleteTestData = async (clientUser: User, contractorUser: User) => {
   await db.$queryRaw`DELETE FROM "Contract" WHERE "clientId" = ${clientUser.id} OR "contractorId" = ${contractorUser.id}`;
-  await db.$queryRaw`DELETE FROM "User" WHERE email = ${clientUser.email} OR email = ${contractorUser.email}`;
+  await db.$queryRaw`DELETE FROM "Job" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
+  await db.$queryRaw`DELETE FROM "User" WHERE "id" = ${clientUser.id} OR "id" = ${contractorUser.id}`;
 };
 
 describe("GET contract", () => {
@@ -39,6 +42,7 @@ describe("GET contract", () => {
         clientId: clientUser.id,
         contractorId: contractorUser.id,
         name: "A test contract 1",
+        jobId: (await createJob(getMockJobInput({ userId: clientUser.id }))).id,
       })
     );
     await createContract(
@@ -46,6 +50,7 @@ describe("GET contract", () => {
         clientId: clientUser.id,
         contractorId: contractorUser.id,
         name: "A test contract 2",
+        jobId: (await createJob(getMockJobInput({ userId: clientUser.id }))).id,
       })
     );
     await createContract(
@@ -53,6 +58,7 @@ describe("GET contract", () => {
         clientId: clientUser.id,
         contractorId: contractorUser.id,
         name: "A test contract 3",
+        jobId: (await createJob(getMockJobInput({ userId: clientUser.id }))).id,
       })
     );
     await createContract(
@@ -61,6 +67,7 @@ describe("GET contract", () => {
         contractorId: contractorUser.id,
         deletedAt: new Date(),
         name: "A deleted test contract",
+        jobId: (await createJob(getMockJobInput({ userId: clientUser.id }))).id,
       })
     );
   });
@@ -98,6 +105,7 @@ describe("GET contract", () => {
 describe("POST contract", () => {
   let clientUser: User;
   let contractorUser: User;
+  let job: Job;
 
   beforeAll(async () => {
     clientUser = await createUser(
@@ -112,6 +120,7 @@ describe("POST contract", () => {
         name: `${namingPrefix}contractor`,
       })
     );
+    job = await createJob(getMockJobInput({ userId: clientUser.id }));
   });
 
   afterAll(async () => {
@@ -141,6 +150,7 @@ describe("POST contract", () => {
       startDate: "2023-03-30",
       clientId: contractorUser.id,
       name: "A test contract",
+      jobId: job.id,
     };
     try {
       await httpRequest.post(endpointUrl, body, {
@@ -158,29 +168,6 @@ describe("POST contract", () => {
     }
   });
 
-  it("returns a 200 response and the ID of the newly created contract", async () => {
-    const body = {
-      status: "active",
-      terms: "none",
-      totalCost: "$100",
-      endDate: LocalDate.now().plusDays(8).toString(),
-      startDate: LocalDate.now().plusDays(1).toString(),
-      clientId: clientUser.id,
-      name: "A test contract",
-    };
-    try {
-      const response = await httpRequest.post(endpointUrl, body, {
-        headers: {
-          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
-        },
-      });
-      expect(response.status).toBe(200);
-      expect(response.data.id).toBeDefined();
-    } catch (error) {
-      expect(true).toBe(false);
-    }
-  });
-
   it("returns a 400 response when the request body is missing name", async () => {
     const body = {
       status: "active",
@@ -190,6 +177,7 @@ describe("POST contract", () => {
       startDate: "2023-03-30",
       clientId: clientUser.id,
       contractorId: contractorUser.id,
+      jobId: job.id,
     };
     try {
       await httpRequest.post(endpointUrl, body, {
@@ -216,6 +204,7 @@ describe("POST contract", () => {
       startDate: "2023-03-30",
       contractorId: contractorUser.id,
       name: "A test contract",
+      jobId: job.id,
     };
     try {
       await httpRequest.post(endpointUrl, body, {
@@ -242,6 +231,7 @@ describe("POST contract", () => {
       clientId: clientUser.id,
       contractorId: contractorUser.id,
       name: "A test contract",
+      jobId: job.id,
     };
     try {
       await httpRequest.post(endpointUrl, body, {
@@ -268,6 +258,7 @@ describe("POST contract", () => {
       clientId: clientUser.id,
       contractorId: contractorUser.id,
       name: "A test contract",
+      jobId: job.id,
     };
     try {
       await httpRequest.post(endpointUrl, body, {
@@ -294,6 +285,7 @@ describe("POST contract", () => {
       clientId: clientUser.id,
       contractorId: contractorUser.id,
       name: "A test contract",
+      jobId: job.id,
     };
     try {
       await httpRequest.post(endpointUrl, body, {
@@ -320,6 +312,7 @@ describe("POST contract", () => {
       clientId: clientUser.id,
       contractorId: contractorUser.id,
       name: "A test contract",
+      jobId: job.id,
     };
     try {
       await httpRequest.post(endpointUrl, body, {
@@ -346,6 +339,7 @@ describe("POST contract", () => {
       startDate: LocalDate.now().plusDays(1).toString(),
       clientId: 99999999,
       name: "A test contract",
+      jobId: job.id,
     };
     try {
       await httpRequest.post(endpointUrl, body, {
@@ -354,13 +348,72 @@ describe("POST contract", () => {
         },
       });
       expect(true).toBe(false);
-      
     } catch (error) {
       expect((<AxiosError>error).response?.status).toBe(400);
       expect((<AxiosError>error).response?.data).toStrictEqual({
         message: "One or more of the related records does not exist",
         name: "MissingRelatedRecord",
       });
+    }
+  });
+
+  it("returns a 409 response when the job is already associated with another contract", async () => {
+    const jobId = (await createJob(getMockJobInput({ userId: clientUser.id })))
+      .id;
+    await createContract(
+      getMockContractInput({
+        jobId,
+        clientId: clientUser.id,
+        contractorId: contractorUser.id,
+      })
+    );
+    const body = {
+      status: "active",
+      terms: "none",
+      totalCost: "$100",
+      endDate: LocalDate.now().plusDays(8).toString(),
+      startDate: LocalDate.now().plusDays(1).toString(),
+      clientId: clientUser.id,
+      name: "A test contract",
+      jobId,
+    };
+    try {
+      await httpRequest.post(endpointUrl, body, {
+        headers: {
+          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+        },
+      });
+      expect(true).toBe(false);
+    } catch (error) {
+      expect((<AxiosError>error).response?.status).toBe(409);
+      expect((<AxiosError>error).response?.data).toStrictEqual({
+        message: "Violates a foreign key constraint, like uniqueness",
+        name: "ForeignKeyConstraintViolation",
+      });
+    }
+  });
+
+  it("returns a 200 response and the ID of the newly created contract", async () => {
+    const body = {
+      status: "active",
+      terms: "none",
+      totalCost: "$100",
+      endDate: LocalDate.now().plusDays(8).toString(),
+      startDate: LocalDate.now().plusDays(1).toString(),
+      clientId: clientUser.id,
+      name: "A test contract",
+      jobId: (await createJob(getMockJobInput({ userId: clientUser.id }))).id,
+    };
+    try {
+      const response = await httpRequest.post(endpointUrl, body, {
+        headers: {
+          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+        },
+      });
+      expect(response.status).toBe(200);
+      expect(response.data.id).toBeDefined();
+    } catch (error) {
+      expect(true).toBe(false);
     }
   });
 });
