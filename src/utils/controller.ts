@@ -19,7 +19,7 @@ type ControllerParams<T_Input, T_Output> = {
   };
   req: NextApiRequest;
   res: NextApiResponse;
-  action: (req: Omit<NextApiRequest, "body"> & { body: T_Input }) => Promise<T_Output>;
+  action: (req: Omit<NextApiRequest, "body" | "query"> & { body: T_Input, query: T_Input }) => Promise<T_Output>;
 };
 
 /**
@@ -84,7 +84,7 @@ export const runController = async <
   }
   // Run the action
   try {
-    const resBody = await action(req);
+    const resBody = await action(req as any);
     res.status(200).json(resBody);
   } catch (e) {
     // Return 409 when a foreign key constraint violation occurs

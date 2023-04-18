@@ -1,10 +1,12 @@
 import db from "@/db-client";
-import { Prisma } from "@/lib/prisma-client";
-import { PaginationParams } from "../shared-types";
+import { Job, Prisma } from "@/lib/prisma-client";
+import { PaginationParams } from "@/utils/pagination";
 
 export const createJob = async (job: Prisma.JobCreateInput) => {
   const createdJob = await db.job.create({
-    data: job,
+    data: {
+      ...job,
+    },
   });
   return createdJob;
 };
@@ -18,20 +20,17 @@ export const getJob = async (id: number) => {
   return job;
 };
 
-export const getJobs = async ({ limit, offset }: PaginationParams) => {
+export const getJobs = async ({
+  size,
+  page,
+  orderBy,
+  order,
+}: PaginationParams): Promise<Job[]> => {
   const jobs = await db.job.findMany({
-    select: {
-      name: true,
-      description: true,
-      createdAt: true,
-      updatedAt: true,
-      id: true,
-      userId: true,
-    },
-    take: limit,
-    skip: offset,
+    take: size,
+    skip: size * (page - 1),
     orderBy: {
-      createdAt: "desc",
+      [orderBy]: order,
     },
   });
   return jobs;
@@ -39,15 +38,20 @@ export const getJobs = async ({ limit, offset }: PaginationParams) => {
 
 export const getUserJobs = async (
   userId: number,
-  { limit, offset }: PaginationParams
+  { size, page, orderBy, order }: PaginationParams
 ) => {
   const jobs = await db.job.findMany({
     where: { userId },
-    take: limit,
-    skip: offset,
+    take: size,
+    skip: size * (page - 1),
     orderBy: {
-      createdAt: "desc",
+      [orderBy]: order,
     },
   });
   return jobs;
 };
+
+export const countJobs = async () => {
+  const count = await db.job.count();
+  return count;
+}
