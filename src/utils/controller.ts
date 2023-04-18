@@ -19,7 +19,7 @@ type ControllerParams<T_Input, T_Output> = {
   };
   req: NextApiRequest;
   res: NextApiResponse;
-  action: (req: Omit<NextApiRequest, "body" | "query"> & { body: T_Input, query: T_Input }) => Promise<T_Output>;
+  action: (req: NextApiRequest, validatedInput: T_Input) => Promise<T_Output>;
 };
 
 /**
@@ -59,18 +59,14 @@ export const runController = async <
     req.headers.userId = userId.toString();
   }
   // If validation is required, validate the request body or query params
+  let validatedInput;
   if (validation) {
     try {
       const values = req.method === "GET" ? req.query : req.body;
-      const item = await validation.schema.validate(values, {
+      validatedInput = await validation.schema.validate(values, {
         abortEarly: true,
         ...validation.options,
       });
-      if (req.method === "GET") {
-        req.query = item;
-      } else {
-        req.body = item;
-      }
     } catch (e) {
       // Return 400 when a validation error occurs
       if (e instanceof ValidationError) {
@@ -84,7 +80,7 @@ export const runController = async <
   }
   // Run the action
   try {
-    const resBody = await action(req as any);
+    const resBody = await action(req, validatedInput);
     res.status(200).json(resBody);
   } catch (e) {
     // Return 409 when a foreign key constraint violation occurs

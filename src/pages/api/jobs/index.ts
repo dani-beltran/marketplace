@@ -30,17 +30,17 @@ export default async function handler(
         },
         req,
         res,
-        action: async (req) => {
+        action: async (_req, input) => {
           const [jobs, count] = await Promise.all([
-            getJobs(req.query),
+            getJobs(input),
             countJobs(),
           ]);
 
           const response: PaginatedResponse<Job> = {
             data: jobs,
             pagination: {
-              page: req.query.page,
-              size: req.query.size,
+              page: input.page,
+              size: input.size,
               total: count,
             },
           };
@@ -62,13 +62,12 @@ export default async function handler(
         },
         req,
         res,
-        action: async (req) => {
+        action: async ({ headers }, input) => {
           // Only the logged-in user can create a job posting
-          const userId = Number(req.headers.userId);
-          const { body } = req;
+          const userId = Number(headers.userId);
           const jobInput = {
-            name: body.name,
-            description: body.description,
+            name: input.name,
+            description: input.description,
             user: { connect: { id: userId } },
           };
           // Create the job and return it

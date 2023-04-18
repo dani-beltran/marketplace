@@ -1,5 +1,9 @@
 import { Contract } from "@/lib/prisma-client";
-import { createContract, getUserContracts, validateContractInput } from "@/models/contract";
+import {
+  createContract,
+  getUserContracts,
+  validateContractInput,
+} from "@/models/contract";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { object, string, number, date, InferType } from "yup";
 import { runController } from "@/utils/controller";
@@ -23,8 +27,8 @@ export default async function handler(
         authentication: true,
         req,
         res,
-        action: async (req) => {
-          const userId = Number(req.headers.userId);
+        action: async ({ headers }) => {
+          const userId = Number(headers.userId);
           const contracts = await getUserContracts(userId);
           return contracts;
         },
@@ -52,24 +56,23 @@ export default async function handler(
         },
         req,
         res,
-        action: async (req) => {
+        action: async ({ headers }, input) => {
           // Only the logged-in contractor can create a contract for a client
-          const contractorId = Number(req.headers.userId);
-          const { body } = req;
+          const contractorId = Number(headers.userId);
           // Check the validity of the contract to create
           const contractInput = {
-            name: body.name,
-            terms: body.terms,
-            totalCost: body.totalCost,
+            name: input.name,
+            terms: input.terms,
+            totalCost: input.totalCost,
             status: "pending",
-            hourlyRate: body.hourlyRate,
-            hoursPerWeek: body.hoursPerWeek,
-            totalHours: body.totalHours,
-            startDate: body.startDate,
-            endDate: body.endDate,
-            client: { connect: { id: body.clientId } },
+            hourlyRate: input.hourlyRate,
+            hoursPerWeek: input.hoursPerWeek,
+            totalHours: input.totalHours,
+            startDate: input.startDate,
+            endDate: input.endDate,
+            client: { connect: { id: input.clientId } },
             contractor: { connect: { id: contractorId } },
-            job: { connect: { id: body.jobId } },
+            job: { connect: { id: input.jobId } },
           };
           validateContractInput(contractInput);
           // Create the contract and return it
