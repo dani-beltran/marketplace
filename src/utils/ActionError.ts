@@ -1,17 +1,20 @@
 /**
  * This is a custom error class that can be used to throw errors within the API
- * actions.
- * They are meant to be caught by the controller function and returned as JSON.
+ * controllers.
  * @example 
  * try {
- *  throw new ActError("BadRequest", "You cannot create a contract for yourself.");
+ *  throw new ActionError("BadRequest", "You cannot create a contract for yourself.");
  * } catch (e) {
- *  if (e instanceof ActError) {
+ *  if (e instanceof ActionError) {
  *   res.status(e.getStatus()).json(e.toJSON());
  *  }
  * }
+ *  
+ * @context In this project these errors are meant to be thrown inside `runController`\'s callback `action`.
+ * 
+ * `runController` will catch these errors and send the corresponding HTTP error response.
  */
-class ActError extends Error {
+class ActionError extends Error {
   
   constructor(name: string, message: string, public code?: number) {
     super(message);
@@ -51,4 +54,4 @@ class ActError extends Error {
 }
 
 
-export default ActError;
+export default ActionError;

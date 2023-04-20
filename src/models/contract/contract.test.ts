@@ -1,4 +1,4 @@
-import ActError from "@/utils/ActError";
+import ActionError from "@/utils/ActionError";
 import { validateContractInput } from ".";
 import { getMockContractInput } from "@/utils/mocks/contract";
 import { LocalDate } from "@js-joda/core";
@@ -29,8 +29,8 @@ describe("validateContract", () => {
       validateContractInput(contract);
       expect(true).toBe(false);
     } catch (error) {
-      expect((<ActError>error).message).toBe("The contract is expired");
-      expect((<ActError>error).name).toBe("BadRequest");
+      expect((<ActionError>error).message).toBe("The contract is expired");
+      expect((<ActionError>error).name).toBe("BadRequest");
     }
   });
 
@@ -45,10 +45,10 @@ describe("validateContract", () => {
       validateContractInput(contract);
       expect(true).toBe(false);
     } catch (error) {
-      expect((<ActError>error).message).toBe(
+      expect((<ActionError>error).message).toBe(
         "The contract is starting in the past"
       );
-      expect((<ActError>error).name).toBe("BadRequest");
+      expect((<ActionError>error).name).toBe("BadRequest");
     }
   });
 
@@ -63,10 +63,10 @@ describe("validateContract", () => {
       validateContractInput(contract);
       expect(true).toBe(false);
     } catch (error) {
-      expect((<ActError>error).message).toBe(
+      expect((<ActionError>error).message).toBe(
         "The contract is starting after it ends"
       );
-      expect((<ActError>error).name).toBe("BadRequest");
+      expect((<ActionError>error).name).toBe("BadRequest");
     }
   });
 
@@ -83,10 +83,10 @@ describe("validateContract", () => {
       validateContractInput(contract);
       expect(true).toBe(false);
     } catch (error) {
-      expect((<ActError>error).message).toBe(
+      expect((<ActionError>error).message).toBe(
         "The contract is missing an hourly rate"
       );
-      expect((<ActError>error).name).toBe("BadRequest");
+      expect((<ActionError>error).name).toBe("BadRequest");
     }
   });
 
@@ -103,10 +103,10 @@ describe("validateContract", () => {
       validateContractInput(contract);
       expect(true).toBe(false);
     } catch (error) {
-      expect((<ActError>error).message).toBe(
+      expect((<ActionError>error).message).toBe(
         "The contract is missing an hourly rate"
       );
-      expect((<ActError>error).name).toBe("BadRequest");
+      expect((<ActionError>error).name).toBe("BadRequest");
     }
   });
 
@@ -123,10 +123,10 @@ describe("validateContract", () => {
       validateContractInput(contract);
       expect(true).toBe(false);
     } catch (error) {
-      expect((<ActError>error).message).toBe(
+      expect((<ActionError>error).message).toBe(
         "The contract is missing total hours"
       );
-      expect((<ActError>error).name).toBe("BadRequest");
+      expect((<ActionError>error).name).toBe("BadRequest");
     }
   });
 
@@ -143,10 +143,10 @@ describe("validateContract", () => {
       validateContractInput(contract);
       expect(true).toBe(false);
     } catch (error) {
-      expect((<ActError>error).message).toBe(
+      expect((<ActionError>error).message).toBe(
         "The contract duration is not a whole number of weeks and this is required when hours per week is set"
       );
-      expect((<ActError>error).name).toBe("BadRequest");
+      expect((<ActionError>error).name).toBe("BadRequest");
     }
   });
 
@@ -163,10 +163,10 @@ describe("validateContract", () => {
       validateContractInput(contract);
       expect(true).toBe(false);
     } catch (error) {
-      expect((<ActError>error).message).toBe(
+      expect((<ActionError>error).message).toBe(
         "The contract total hours does not match the calculated total hours from hours per week and the duration of the contract"
       );
-      expect((<ActError>error).name).toBe("BadRequest");
+      expect((<ActionError>error).name).toBe("BadRequest");
     }
   });
 
@@ -184,10 +184,10 @@ describe("validateContract", () => {
       console.log(currency(contract.totalCost));
       expect(true).toBe(false);
     } catch (error) {
-      expect((<ActError>error).message).toBe(
+      expect((<ActionError>error).message).toBe(
         "The contract total cost has the wrong format"
       );
-      expect((<ActError>error).name).toBe("BadRequest");
+      expect((<ActionError>error).name).toBe("BadRequest");
     }
   });
 
@@ -204,10 +204,10 @@ describe("validateContract", () => {
       validateContractInput(contract);
       expect(true).toBe(false);
     } catch (error) {
-      expect((<ActError>error).message).toBe(
+      expect((<ActionError>error).message).toBe(
         "The contract total cost does not match the calculated total cost from hours and hourly rate"
       );
-      expect((<ActError>error).name).toBe("BadRequest");
+      expect((<ActionError>error).name).toBe("BadRequest");
     }
   });
 
@@ -224,10 +224,10 @@ describe("validateContract", () => {
       validateContractInput(contract);
       expect(true).toBe(false);
     } catch (error) {
-      expect((<ActError>error).message).toBe(
+      expect((<ActionError>error).message).toBe(
         "The contractor and client cannot be the same person"
       );
-      expect((<ActError>error).name).toBe("BadRequest");
+      expect((<ActionError>error).name).toBe("BadRequest");
     }
   });
 

@@ -1,6 +1,6 @@
 import { User } from "@/lib/prisma-client";
 import { deleteUser, getUser } from "@/models/user";
-import ActError from "@/utils/ActError";
+import ActionError from "@/utils/ActionError";
 import { runController } from "@/utils/controller";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -20,7 +20,7 @@ export default async function userHandler(
         action: async () => {
           const user = await getUser(id);
           if (!user) {
-            throw new ActError("NotFound", `User with id ${id} not found`);
+            throw new ActionError("NotFound", `User with id ${id} not found`);
           }
           // Only the user can see all if their own data
           if (id === Number(req.headers.userId)) {
@@ -44,7 +44,7 @@ export default async function userHandler(
         action: async () => {
           // Only the user can delete its own account
           if (id !== Number(req.headers.userId)) {
-            throw new ActError(
+            throw new ActionError(
               "Forbidden",
               `You are not authorized to delete this user`
             );

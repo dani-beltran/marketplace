@@ -1,7 +1,7 @@
 import { currencyRegExp } from "@/config/currencies";
 import db from "@/db-client";
 import { Contract, Prisma } from "@/lib/prisma-client";
-import ActError from "@/utils/ActError";
+import ActionError from "@/utils/ActionError";
 import {
   formatDate,
   getWeeksBetweenDates,
@@ -77,7 +77,7 @@ export const deleteContract = async (contractId: number) => {
 
 /**
  *  A function that validates a contract input to be used before creating or updating a contract.
- * @throws ActError if the contract is invalid
+ * @throws ActionError if the contract is invalid
  */
 export const validateContractInput = (contract: Prisma.ContractCreateInput) => {
   const startDate = new Date(contract.startDate);
@@ -85,41 +85,41 @@ export const validateContractInput = (contract: Prisma.ContractCreateInput) => {
 
    // Can't create a contract for yourself
    if (contract.contractor.connect?.id === contract.client.connect?.id) {
-    throw new ActError(
+    throw new ActionError(
       "BadRequest",
       "The contractor and client cannot be the same person"
     );
   }
   // Check if the contract is expired
   if (endDate < new Date()) {
-    throw new ActError("BadRequest", "The contract is expired");
+    throw new ActionError("BadRequest", "The contract is expired");
   }
   // Check if the contract is starting in the past
   if (LocalDate.now().compareTo(LocalDate.parse(formatDate(startDate))) > 0) {
-    throw new ActError("BadRequest", "The contract is starting in the past");
+    throw new ActionError("BadRequest", "The contract is starting in the past");
   }
   // Check if the contract is starting after it ends
   if (startDate > endDate) {
-    throw new ActError("BadRequest", "The contract is starting after it ends");
+    throw new ActionError("BadRequest", "The contract is starting after it ends");
   }
   // Check if hourly rate is set if hours per week is set
   if (contract.hoursPerWeek && !contract.hourlyRate) {
-    throw new ActError("BadRequest", "The contract is missing an hourly rate");
+    throw new ActionError("BadRequest", "The contract is missing an hourly rate");
   }
   // Check if hourly rate is set if total hours is set
   if (contract.totalHours && !contract.hourlyRate) {
-    throw new ActError("BadRequest", "The contract is missing an hourly rate");
+    throw new ActionError("BadRequest", "The contract is missing an hourly rate");
   }
   // Check if total hours is set if hours per week is set
   if (contract.hoursPerWeek && !contract.totalHours) {
-    throw new ActError("BadRequest", "The contract is missing total hours");
+    throw new ActionError("BadRequest", "The contract is missing total hours");
   }
   // Check if is whole weeks between start and end date if hoursPerWeek is set
   if (
     contract.hoursPerWeek &&
     getWeeksBetweenDatesReminder(startDate, endDate) !== 0
   ) {
-    throw new ActError(
+    throw new ActionError(
       "BadRequest",
       "The contract duration is not a whole number of weeks and this is required when hours per week is set"
     );
@@ -131,14 +131,14 @@ export const validateContractInput = (contract: Prisma.ContractCreateInput) => {
     contract.totalHours !==
       getWeeksBetweenDates(startDate, endDate) * contract.hoursPerWeek
   ) {
-    throw new ActError(
+    throw new ActionError(
       "BadRequest",
       "The contract total hours does not match the calculated total hours from hours per week and the duration of the contract"
     );
   }
   // Check if the contract has an invalid total cost
   if (currencyRegExp.test(contract.totalCost) === false) {
-    throw new ActError(
+    throw new ActionError(
       "BadRequest",
       "The contract total cost has the wrong format"
     );
@@ -150,7 +150,7 @@ export const validateContractInput = (contract: Prisma.ContractCreateInput) => {
     currency(contract.totalCost) !==
       currency(contract.hourlyRate).multiply(contract.totalHours)
   ) {
-    throw new ActError(
+    throw new ActionError(
       "BadRequest",
       "The contract total cost does not match the calculated total cost from hours and hourly rate"
     );

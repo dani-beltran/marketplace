@@ -9,7 +9,7 @@ import {
   isUniqueConstraintViolation,
 } from "./db-helpers";
 import { Dictionary } from "lodash";
-import ActError from "./ActError";
+import ActionError from "./ActionError";
 
 type ControllerParams<T_Input, T_Output> = {
   authentication?: boolean;
@@ -114,8 +114,8 @@ export const runController = async <
       });
       return;
     }
-    // Catch ActErrors and return them as JSON
-    if (e instanceof ActError) {
+    // Catch ActionErrors and return them as JSON
+    if (e instanceof ActionError) {
       res.status(e.getStatus()).json(e.toJSON());
       return;
     }
