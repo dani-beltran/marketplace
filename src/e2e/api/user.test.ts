@@ -38,7 +38,7 @@ describe("GET Users", () => {
     await deleteTestData(clientUser, contractorUser);
   });
 
-  it("should return 200 and a list of users with only id and name fields", async () => {
+  it("should return 200 and a list of users with only with public data", async () => {
     const response = await httpRequest.get(endpointUrl);
     expect(response.status).toBe(200);
     expect(
@@ -46,12 +46,14 @@ describe("GET Users", () => {
     ).toStrictEqual({
       id: clientUser.id,
       name: clientUser.name,
+      image: clientUser.image
     });
     expect(
       response.data.find((user: User) => user.id === contractorUser.id)
     ).toStrictEqual({
       id: contractorUser.id,
       name: contractorUser.name,
+      image: contractorUser.image
     });
   });
 });

@@ -10,7 +10,7 @@ import { runController } from "@/utils/controller";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Contract | Contract[] | Error>
+  res: NextApiResponse
 ) {
   const { method } = req;
 
@@ -23,7 +23,7 @@ export default async function handler(
     // TODO: Add filter to show only contracts where the user is the client
     // TODO: Add filter to Show only contracts where the user is the contractor
     case "GET":
-      await runController({
+      await runController<unknown, Contract[]>({
         authentication: true,
         req,
         res,

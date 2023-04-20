@@ -1,6 +1,6 @@
-import { Contract, Job } from "@/lib/prisma-client";
+import { Job } from "@/lib/prisma-client";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { object, string, number, date, InferType } from "yup";
+import { object, string, InferType } from "yup";
 import { runController } from "@/utils/controller";
 import { countJobs, createJob, getJobs } from "@/models/job";
 import {
@@ -11,7 +11,7 @@ import {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Contract | Contract[] | Error>
+  res: NextApiResponse
 ) {
   const { method } = req;
 
@@ -35,7 +35,6 @@ export default async function handler(
             getJobs(input),
             countJobs(),
           ]);
-
           const response: PaginatedResponse<Job> = {
             data: jobs,
             pagination: {

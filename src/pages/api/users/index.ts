@@ -1,12 +1,10 @@
-import { User } from "@/lib/prisma-client";
-import { createUser, getUsers } from "@/models/user";
+import { PublicUser, getUsers } from "@/models/user";
 import { runController } from "@/utils/controller";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { object, string, ValidationError } from "yup";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<User[] | User | Error>
+  res: NextApiResponse
 ) {
   const { method } = req;
 
@@ -18,13 +16,13 @@ export default async function handler(
       // TODO: Handle filtering
       // TODO: Handle search
       // TODO: Filter deleted out
-      await runController({
+      await runController<unknown, PublicUser[]>({
         // Anybody can see the users in the platform
         authentication: false,
         req,
         res,
         action: async () => {
-          const users = await getUsers({ select: { id: true, name: true } });
+          const users = await getUsers({onlyPublicData: true});
           return users;
         },
       });

@@ -1,19 +1,19 @@
 import { User } from "@/lib/prisma-client";
-import { deleteUser, getUser } from "@/models/user";
+import { PublicUser, deleteUser, getUser } from "@/models/user";
 import ActionError from "@/utils/ActionError";
 import { runController } from "@/utils/controller";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function userHandler(
   req: NextApiRequest,
-  res: NextApiResponse<User | Error>
+  res: NextApiResponse
 ) {
   const { query, method } = req;
   const id = parseInt(query.id as string, 10);
 
   switch (method) {
     case "GET":
-      await runController({
+      await runController<unknown, PublicUser | User>({
         authentication: true,
         req,
         res,
@@ -37,7 +37,7 @@ export default async function userHandler(
       break;
 
     case "DELETE":
-      await runController({
+      await runController<unknown, User>({
         authentication: true,
         req,
         res,
