@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getToken } from "next-auth/jwt";
-import { ObjectSchema, ValidationError } from "yup";
+import { ObjectSchema, ValidationError, Schema } from "yup";
 import { log } from "./logging";
 import { Prisma } from "@/lib/prisma-client";
 import {
@@ -13,13 +13,16 @@ import ActionError from "./ActionError";
 
 type ControllerParams<T_Input, T_Output> = {
   authentication?: boolean;
-  validation?: {
-    schema: ObjectSchema<any>;
+  validation: {
+    schema: Schema<T_Input>;
     options?: { abortEarly?: boolean };
   };
   req: NextApiRequest;
   res: NextApiResponse;
-  action: (req: NextApiRequest, validatedInput: T_Input) => Promise<T_Output>;
+  action: (
+    req: NextApiRequest,
+    validatedInput: Awaited<T_Input>
+  ) => Promise<T_Output>;
 };
 
 /**
@@ -58,31 +61,25 @@ export const runController = async <
     }
     req.headers.userId = userId.toString();
   }
-  // If validation is required, validate the request body or query params
-  let validatedInput;
-  if (validation) {
-    try {
-      const values = req.method === "GET" ? req.query : req.body;
-      validatedInput = await validation.schema.validate(values, {
-        abortEarly: true,
-        ...validation.options,
-      });
-    } catch (e) {
-      // Return 400 when a validation error occurs
-      if (e instanceof ValidationError) {
-        res.status(400).json({
-          name: "ValidationError",
-          message: e.message,
-        });
-        return;
-      }
-    }
-  }
-  // Run the action
+  // Validation is always required, validate the request body or query params
   try {
+    const values = req.method === "GET" ? req.query : req.body;
+    const validatedInput = await validation.schema.validate(values, {
+      abortEarly: true,
+      ...validation.options,
+    });
+    // Run the action
     const resBody = await action(req, validatedInput);
     res.status(200).json(resBody);
   } catch (e) {
+    // Return 400 when a validation error occurs
+    if (e instanceof ValidationError) {
+      res.status(400).json({
+        name: "ValidationError",
+        message: e.message,
+      });
+      return;
+    }
     // Return 409 when a foreign key constraint violation occurs
     if (
       e instanceof Prisma.PrismaClientKnownRequestError &&

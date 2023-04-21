@@ -5,7 +5,7 @@ import {
   validateContractInput,
 } from "@/models/contract";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { object, string, number, date, InferType } from "yup";
+import { object, string, number, date, InferType, mixed } from "yup";
 import { runController } from "@/utils/controller";
 
 export default async function handler(
@@ -25,6 +25,9 @@ export default async function handler(
     case "GET":
       await runController<unknown, Contract[]>({
         authentication: true,
+        validation: {
+          schema: mixed()
+        },
         req,
         res,
         action: async ({ headers }) => {

@@ -1,6 +1,7 @@
 import { PublicUser, getUsers } from "@/models/user";
 import { runController } from "@/utils/controller";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { mixed } from "yup";
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,6 +20,9 @@ export default async function handler(
       await runController<unknown, PublicUser[]>({
         // Anybody can see the users in the platform
         authentication: false,
+        validation: {
+          schema: mixed()
+        },
         req,
         res,
         action: async () => {

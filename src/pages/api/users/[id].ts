@@ -3,6 +3,7 @@ import { PublicUser, deleteUser, getUser } from "@/models/user";
 import ActionError from "@/utils/ActionError";
 import { runController } from "@/utils/controller";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { mixed } from "yup";
 
 export default async function userHandler(
   req: NextApiRequest,
@@ -15,6 +16,9 @@ export default async function userHandler(
     case "GET":
       await runController<unknown, PublicUser | User>({
         authentication: true,
+        validation: {
+          schema: mixed()
+        },
         req,
         res,
         action: async () => {
@@ -39,6 +43,9 @@ export default async function userHandler(
     case "DELETE":
       await runController<unknown, User>({
         authentication: true,
+        validation: {
+          schema: mixed()
+        },
         req,
         res,
         action: async () => {

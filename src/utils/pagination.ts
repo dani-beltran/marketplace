@@ -9,7 +9,7 @@
 // unique column such as ID or a timestamp. It will be good for a infinity scroll
 // though.
 //
-import { number, object, string } from "yup";
+import { mixed, number, object, string } from "yup";
 
 export type PaginationParams = {
   size: number;
@@ -38,6 +38,6 @@ export const getPaginationSchema = (orderByOpts: string[] = ['createdAt']) => {
     size: number().min(1).default(10),
     page: number().min(1).default(1),
     orderBy: string().matches(orderByOptsRegExp).default('createdAt'),
-    order: string().matches(/^(asc|desc)$/).default('desc'),
+    order: mixed<'asc' | 'desc'>().oneOf(['asc', 'desc']).default('desc'),
   });
 }
