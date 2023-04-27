@@ -191,6 +191,7 @@ describe("POST Job", () => {
         name: "test job",
         description: "test description",
         userId: clientUser.id,
+        issueUrl: null,
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
         deletedAt: null
