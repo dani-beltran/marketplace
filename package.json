@@ -4,6 +4,7 @@
   "description": "A generic marketplace to be used as template.",
   "main": "index.js",
   "scripts": {
+    "seed": "node prisma/seed.js",
     "test": "yarn test:unit; yarn test:api",
     "test:unit": "jest",
     "test:api": "E2E=true jest",
@@ -32,7 +33,13 @@
   "homepage": "https://github.com/dani-beltran/marketplace#readme",
   "packageManager": "yarn@2.4.3",
   "dependencies": {
+    "@emotion/react": "^11.10.6",
+    "@emotion/styled": "^11.10.6",
+    "@fontsource/roboto": "^4.5.8",
     "@js-joda/core": "^5.5.3",
+    "@mui/icons-material": "^5.11.16",
+    "@mui/material": "^5.12.2",
+    "@mui/x-data-grid": "^6.2.1",
     "@next-auth/prisma-adapter": "^1.0.5",
     "@prisma/client": "4.11.0",
     "@yarnpkg/pnpify": "^4.0.0-rc.40",
@@ -55,6 +62,7 @@
     "jest": "^29.5.0",
     "jest-environment-jsdom": "^29.5.0",
     "prisma": "4.11.0",
+    "ts-node": "^10.9.1",
     "typescript": "^5.0.2"
   }
 }

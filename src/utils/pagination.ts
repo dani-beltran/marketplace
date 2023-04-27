@@ -20,12 +20,14 @@ export type PaginationParams = {
 
 export type PaginatedResponse<T> = {
   data: T[];
-  pagination: {
-    size: number;
-    page: number;
-    total: number;
-  };
+  pagination: Pagination
 };
+
+export type Pagination = {
+  size: number;
+  page: number;
+  total: number;
+}
 
 /**
  * The pagination schema is used to validate the query params for pagination.
