@@ -21,13 +21,13 @@ export default async function userHandler(
         },
         req,
         res,
-        action: async () => {
+        action: async ({session}) => {
           const user = await getUser(id);
           if (!user) {
             throw new ActionError("NotFound", `User with id ${id} not found`);
           }
           // Only the user can see all if their own data
-          if (id === Number(req.headers.userId)) {
+          if (id === session!.user.id) {
             return user;
           } else {
             return {
@@ -48,9 +48,9 @@ export default async function userHandler(
         },
         req,
         res,
-        action: async () => {
+        action: async ({session}) => {
           // Only the user can delete its own account
-          if (id !== Number(req.headers.userId)) {
+          if (id !== session!.user.id) {
             throw new ActionError(
               "Forbidden",
               `You are not authorized to delete this user`

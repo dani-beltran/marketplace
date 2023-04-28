@@ -1,14 +1,19 @@
-import NextAuth from "next-auth";
+import NextAuth, { AuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import GithubProvider from "next-auth/providers/github"
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import db from "@/db-client";
 
-export default NextAuth({
+export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(db),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    GithubProvider({
+      clientId: process.env.GITHUB_ID!,
+      clientSecret: process.env.GITHUB_SECRET!,
     }),
   ],
   callbacks: {
@@ -29,10 +34,15 @@ export default NextAuth({
       // Use this callback to add custom properties to the JWT
       return token;
     },
-    async session({ session }) {
+    async session({ session, user }) {
       // Use this callback to send properties to the client through the session.
+      if (session.user) {
+        session.user["id"] = Number(user.id);
+      }
       return session;
     },
   },
   secret: process.env.NEXTAUTH_SECRET!,
-});
+};
+
+export default NextAuth(authOptions);

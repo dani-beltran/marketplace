@@ -1,6 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getToken } from "next-auth/jwt";
-import { ObjectSchema, ValidationError, Schema } from "yup";
+import { ValidationError, Schema } from "yup";
 import { log } from "./logging";
 import { Prisma } from "@/lib/prisma-client";
 import {
@@ -10,6 +9,9 @@ import {
 } from "./db-helpers";
 import { Dictionary } from "lodash";
 import ActionError from "./ActionError";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../pages/api/auth/[...nextauth]"
+import { Session } from "next-auth";
 
 type ControllerParams<T_Input, T_Output> = {
   authentication?: boolean;
@@ -20,10 +22,15 @@ type ControllerParams<T_Input, T_Output> = {
   req: NextApiRequest;
   res: NextApiResponse;
   action: (
-    req: NextApiRequest,
-    validatedInput: Awaited<T_Input>
+    params: ActionParams<T_Input>
   ) => Promise<T_Output>;
 };
+
+type ActionParams<T_Input> = {
+  req: NextApiRequest,
+  validatedInput: Awaited<T_Input>,
+  session?: Session,
+}
 
 /**
  * This is a custom controller function that can be used to run API actions.
@@ -45,21 +52,17 @@ export const runController = async <
   res,
   action,
 }: ControllerParams<T_Input, T_Output>): Promise<void> => {
-  // userId header is reserved for authentication results, whatever is coming from
-  // the client should be removed to prevent abuse.
-  delete req.headers.userId;
-  // If authentication is required, get the user id from the session
+  // If authentication is required check there is a valid session
+  let session;
   if (authentication) {
-    // TODO get user id from session
-    const userId = Number((await getToken({ req }))?.userId);
-    if (!userId || Number.isNaN(userId)) {
+    session = await getServerSession(req, res, authOptions);
+    if (!session) {
       res.status(401).json({
         name: "Unauthorized",
         message: "You must be logged in to access this resource.",
       });
       return;
     }
-    req.headers.userId = userId.toString();
   }
   // Validation is always required, validate the request body or query params
   try {
@@ -69,7 +72,7 @@ export const runController = async <
       ...validation.options,
     });
     // Run the action
-    const resBody = await action(req, validatedInput);
+    const resBody = await action({req, validatedInput, session});
     res.status(200).json(resBody);
   } catch (e) {
     // Return 400 when a validation error occurs

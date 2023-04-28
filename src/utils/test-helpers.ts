@@ -1,5 +1,6 @@
 import db from "@/db-client";
 import { encode } from "next-auth/jwt";
+import { generateBase64Token } from "./crypto";
 
 /**
  * Flushes the database removing all data.
@@ -22,10 +23,36 @@ export const flushDB = async () => {
  * @param userId The user ID
  * @returns
  */
-export const genBearerToken = async (userId: number) => {
+const generateBearerToken = async (userId: number) => {
   const token = await encode({
-    token: { userId },
+    token: {
+      id: userId,
+    },
     secret: process.env.NEXTAUTH_SECRET ?? "",
   });
   return token;
+};
+
+export const createTestSession = async (userId: number) => {
+  const token = await generateBearerToken(userId);
+  const sessionToken = generateBase64Token();
+  await db.account.create({
+    data: {
+      userId,
+      provider: "credentials",
+      providerAccountId: `provider-${userId}`,
+      refresh_token: token,
+      access_token: token,
+      type: "access_token",
+      expires_at: 1000 * 60 * 60 * 24,
+    },
+  });
+  await db.session.create({
+    data: {
+      expires: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      sessionToken: sessionToken,
+      userId,
+    },
+  });
+  return sessionToken;
 };

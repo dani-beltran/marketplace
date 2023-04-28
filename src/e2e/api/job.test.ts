@@ -5,7 +5,7 @@ import { createUser } from "@/models/user";
 import { getMockJobInput } from "@/utils/mocks/job";
 import { getMockUserInput } from "@/utils/mocks/user";
 import { PaginatedResponse } from "@/utils/pagination";
-import { genBearerToken } from "@/utils/test-helpers";
+import { createTestSession } from "@/utils/test-helpers";
 import httpRequest, { AxiosError, AxiosResponse } from "axios";
 
 const endpointUrl = `http://${process.env.DOMAIN}/api/jobs`;
@@ -14,6 +14,8 @@ const namingPrefix = "job-e2etest-";
 const deleteTestData = async (clientUser: User, contractorUser: User) => {
   await db.$queryRaw`DELETE FROM "Job" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
   await db.$queryRaw`DELETE FROM "User" WHERE "id" = ${clientUser.id} OR "id" = ${contractorUser.id}`;
+  await db.$queryRaw`DELETE FROM "Session" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
+  await db.$queryRaw`DELETE FROM "Account" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
 };
 
 describe("GET Jobs", () => {
@@ -103,7 +105,7 @@ describe("GET Jobs", () => {
 describe("POST Job", () => {
   let clientUser: User;
   let contractorUser: User;
-
+  let clientSessionToken: string;
   beforeAll(async () => {
     clientUser = await createUser(
       getMockUserInput({
@@ -117,6 +119,7 @@ describe("POST Job", () => {
         name: `${namingPrefix}contractor`,
       })
     );
+    clientSessionToken = await createTestSession(clientUser.id);
   });
 
   afterAll(async () => {
@@ -146,7 +149,7 @@ describe("POST Job", () => {
         },
         {
           headers: {
-            Authorization: `Bearer ${await genBearerToken(clientUser.id)}`,
+            Cookie: `next-auth.session-token=${clientSessionToken}`
           },
         }
       );
@@ -164,7 +167,7 @@ describe("POST Job", () => {
       },
       {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(clientUser.id)}`,
+          Cookie: `next-auth.session-token=${clientSessionToken}`
         },
       });
       expect(true).toBe(false);
@@ -182,7 +185,7 @@ describe("POST Job", () => {
       },
       {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(clientUser.id)}`,
+          Cookie: `next-auth.session-token=${clientSessionToken}`
         },
       });
       expect(res.status).toBe(200);

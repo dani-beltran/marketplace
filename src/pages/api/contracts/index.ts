@@ -30,8 +30,8 @@ export default async function handler(
         },
         req,
         res,
-        action: async ({ headers }) => {
-          const userId = Number(headers.userId);
+        action: async ({ session }) => {
+          const userId = session!.user.id;
           const contracts = await getUserContracts(userId);
           return contracts;
         },
@@ -59,9 +59,9 @@ export default async function handler(
         },
         req,
         res,
-        action: async ({ headers }, input) => {
+        action: async ({ session, validatedInput: input }) => {
           // Only the logged-in contractor can create a contract for a client
-          const contractorId = Number(headers.userId);
+          const contractorId = session!.user.id;
           // Check the validity of the contract to create
           const contractInput = {
             name: input.name,

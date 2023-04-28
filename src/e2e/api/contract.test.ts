@@ -1,7 +1,7 @@
 import { AxiosError } from "axios";
 import { createContract } from "@/models/contract";
 import { createUser } from "@/models/user";
-import { genBearerToken } from "@/utils/test-helpers";
+import { createTestSession } from "@/utils/test-helpers";
 import { getMockContractInput } from "@/utils/mocks/contract";
 import { getMockUserInput } from "@/utils/mocks/user";
 import { Job, User } from "@/lib/prisma-client";
@@ -18,11 +18,14 @@ const deleteTestData = async (clientUser: User, contractorUser: User) => {
   await db.$queryRaw`DELETE FROM "Contract" WHERE "clientId" = ${clientUser.id} OR "contractorId" = ${contractorUser.id}`;
   await db.$queryRaw`DELETE FROM "Job" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
   await db.$queryRaw`DELETE FROM "User" WHERE "id" = ${clientUser.id} OR "id" = ${contractorUser.id}`;
+  await db.$queryRaw`DELETE FROM "Session" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
+  await db.$queryRaw`DELETE FROM "Account" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
 };
 
 describe("GET contract", () => {
   let clientUser: User;
   let contractorUser: User;
+  let clientSessionToken: string;
 
   beforeAll(async () => {
     clientUser = await createUser(
@@ -37,6 +40,7 @@ describe("GET contract", () => {
         name: `${namingPrefix}contractor`,
       })
     );
+    clientSessionToken = await createTestSession(clientUser.id);
     await createContract(
       getMockContractInput({
         clientId: clientUser.id,
@@ -94,7 +98,7 @@ describe("GET contract", () => {
     // This test also tests that the contracts with deletedAt field are ignored
     const response = await httpRequest.get(endpointUrl, {
       headers: {
-        Authorization: `Bearer ${await genBearerToken(clientUser.id)}`,
+        Cookie: `next-auth.session-token=${clientSessionToken}`
       },
     });
     expect(response.status).toBe(200);
@@ -105,6 +109,7 @@ describe("GET contract", () => {
 describe("POST contract", () => {
   let clientUser: User;
   let contractorUser: User;
+  let contractorSessionToken: string;
   let job: Job;
 
   beforeAll(async () => {
@@ -120,6 +125,7 @@ describe("POST contract", () => {
         name: `${namingPrefix}contractor`,
       })
     );
+    contractorSessionToken = await createTestSession(contractorUser.id);
     job = await createJob(getMockJobInput({ userId: clientUser.id }));
   });
 
@@ -155,7 +161,7 @@ describe("POST contract", () => {
     try {
       await httpRequest.post(endpointUrl, body, {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+          Cookie: `next-auth.session-token=${contractorSessionToken}`
         },
       });
       expect(true).toBe(false);
@@ -182,7 +188,7 @@ describe("POST contract", () => {
     try {
       await httpRequest.post(endpointUrl, body, {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+          Cookie: `next-auth.session-token=${contractorSessionToken}`
         },
       });
       expect(true).toBe(false);
@@ -209,7 +215,7 @@ describe("POST contract", () => {
     try {
       await httpRequest.post(endpointUrl, body, {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+          Cookie: `next-auth.session-token=${contractorSessionToken}`
         },
       });
       expect(true).toBe(false);
@@ -236,7 +242,7 @@ describe("POST contract", () => {
     try {
       await httpRequest.post(endpointUrl, body, {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+          Cookie: `next-auth.session-token=${contractorSessionToken}`
         },
       });
       expect(true).toBe(false);
@@ -263,7 +269,7 @@ describe("POST contract", () => {
     try {
       await httpRequest.post(endpointUrl, body, {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+          Cookie: `next-auth.session-token=${contractorSessionToken}`
         },
       });
       expect(true).toBe(false);
@@ -290,7 +296,7 @@ describe("POST contract", () => {
     try {
       await httpRequest.post(endpointUrl, body, {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+          Cookie: `next-auth.session-token=${contractorSessionToken}`
         },
       });
       expect(true).toBe(false);
@@ -317,7 +323,7 @@ describe("POST contract", () => {
     try {
       await httpRequest.post(endpointUrl, body, {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+          Cookie: `next-auth.session-token=${contractorSessionToken}`
         },
       });
       expect(true).toBe(false);
@@ -344,7 +350,7 @@ describe("POST contract", () => {
     try {
       await httpRequest.post(endpointUrl, body, {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+          Cookie: `next-auth.session-token=${contractorSessionToken}`
         },
       });
       expect(true).toBe(false);
@@ -380,7 +386,7 @@ describe("POST contract", () => {
     try {
       await httpRequest.post(endpointUrl, body, {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+          Cookie: `next-auth.session-token=${contractorSessionToken}`
         },
       });
       expect(true).toBe(false);
@@ -407,7 +413,7 @@ describe("POST contract", () => {
     try {
       const response = await httpRequest.post(endpointUrl, body, {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+          Cookie: `next-auth.session-token=${contractorSessionToken}`
         },
       });
       expect(response.status).toBe(200);

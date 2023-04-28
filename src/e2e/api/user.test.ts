@@ -2,7 +2,7 @@ import db from "@/db-client";
 import { User } from "@/lib/prisma-client";
 import { createUser } from "@/models/user";
 import { getMockUserInput } from "@/utils/mocks/user";
-import { genBearerToken } from "@/utils/test-helpers";
+import { createTestSession } from "@/utils/test-helpers";
 import httpRequest, { AxiosError } from "axios";
 
 const endpointUrl = `http://${process.env.DOMAIN}/api/users`;
@@ -11,6 +11,8 @@ const namingPrefix = 'user-e2etest-'
 const deleteTestData = async (clientUser: User, contractorUser: User) => {
   await db.$queryRaw`DELETE FROM "Contract" WHERE "clientId" = ${clientUser.id} OR "contractorId" = ${contractorUser.id}`;
   await db.$queryRaw`DELETE FROM "User" WHERE email = ${clientUser.email} OR email = ${contractorUser.email}`;
+  await db.$queryRaw`DELETE FROM "Session" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
+  await db.$queryRaw`DELETE FROM "Account" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
 };
 
 
@@ -61,6 +63,8 @@ describe("GET Users", () => {
 describe("GET User", () => {
   let clientUser: User;
   let contractorUser: User;
+  let contractorSessionToken: string;
+  let clientSessionToken: string;
 
   beforeAll(async () => {
     clientUser = await createUser(
@@ -75,6 +79,8 @@ describe("GET User", () => {
         name: `${namingPrefix}contractor`,
       })
     );
+    contractorSessionToken = await createTestSession(contractorUser.id);
+    clientSessionToken = await createTestSession(clientUser.id);
   });
 
   afterAll(async () => {
@@ -98,7 +104,7 @@ describe("GET User", () => {
   it("should return 200 and limited user data for other users requesting it", async () => {
     const response = await httpRequest.get(endpointUrl + "/" + clientUser.id, {
       headers: {
-        Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+        Cookie: `next-auth.session-token=${contractorSessionToken}`
       },
     });
     expect(response.status).toBe(200);
@@ -112,7 +118,7 @@ describe("GET User", () => {
   it("should return 200 and full data for users requesting their own data", async () => {
     const response = await httpRequest.get(endpointUrl + "/" + clientUser.id, {
       headers: {
-        Authorization: `Bearer ${await genBearerToken(clientUser.id)}`,
+        Cookie: `next-auth.session-token=${clientSessionToken}`
       },
     });
     expect(response.status).toBe(200);
@@ -127,6 +133,8 @@ describe("GET User", () => {
 describe("DELETE User", () => {
   let clientUser: User;
   let contractorUser: User;
+  let clientSessionToken: string;
+  let contractorSessionToken: string;
 
   beforeAll(async () => {
     clientUser = await createUser(
@@ -141,6 +149,8 @@ describe("DELETE User", () => {
         name: `${namingPrefix}contractor`,
       })
     );
+    contractorSessionToken = await createTestSession(contractorUser.id);
+    clientSessionToken = await createTestSession(clientUser.id);
   });
 
   afterAll(async () => {
@@ -165,7 +175,7 @@ describe("DELETE User", () => {
     try {
       await httpRequest.delete(endpointUrl + "/" + clientUser.id, {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(contractorUser.id)}`,
+          Cookie: `next-auth.session-token=${contractorSessionToken}`
         },
       });
       expect(false).toBeTruthy();
@@ -182,7 +192,7 @@ describe("DELETE User", () => {
     try {
       await httpRequest.delete(endpointUrl + "/" + clientUser.id, {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(clientUser.id)}`,
+          Cookie: `next-auth.session-token=${clientSessionToken}`
         },
       });
     } catch(error) {
@@ -190,19 +200,19 @@ describe("DELETE User", () => {
     }
   });
 
-  it("should return 404 for a user trying to delete its own account after it has been deleted", async () => {
+  it("should return 401 for a user trying to delete its own account after it has been deleted", async () => {
     try {
       await httpRequest.delete(endpointUrl + "/" + clientUser.id, {
         headers: {
-          Authorization: `Bearer ${await genBearerToken(clientUser.id)}`,
+          Cookie: `next-auth.session-token=${clientSessionToken}`
         },
       });
       expect(false).toBeTruthy();
     } catch(error) {
-      expect((<AxiosError>error).response?.status).toBe(404);
+      expect((<AxiosError>error).response?.status).toBe(401);
       expect((<AxiosError>error).response?.data).toStrictEqual({
-        name: "NotFound",
-        message: "The record does not exist",
+        name: "Unauthorized",
+        message: "You must be logged in to access this resource.",
       });
     }
   });

@@ -30,7 +30,7 @@ export default async function handler(
         },
         req,
         res,
-        action: async (_req, input) => {
+        action: async ({validatedInput: input}) => {
           const [jobs, count] = await Promise.all([
             getJobs(input),
             countJobs(),
@@ -61,9 +61,9 @@ export default async function handler(
         },
         req,
         res,
-        action: async ({ headers }, input) => {
+        action: async ({validatedInput: input, session}) => {
           // Only the logged-in user can create a job posting
-          const userId = Number(headers.userId);
+          const userId = session!.user.id;
           const jobInput = {
             name: input.name,
             description: input.description,
