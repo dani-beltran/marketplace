@@ -73,8 +73,6 @@ export default function Jobs() {
           onPaginationModelChange={setPaginationModel}
           disableRowSelectionOnClick
         ></DataGrid>
-
-        <div style={{ minHeight: "100vh" }}></div>
       </main>
     </>
   );
