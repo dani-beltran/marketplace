@@ -1,4 +1,3 @@
-import db from "@/db-client";
 import { Job, User } from "@/lib/prisma-client";
 import { createJob } from "@/models/job";
 import { createUser } from "@/models/user";

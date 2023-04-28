@@ -1,4 +1,3 @@
-import db from "@/db-client";
 import { User } from "@/lib/prisma-client";
 import { Role, createUser } from "@/models/user";
 import { getMockUserInput } from "@/utils/mocks/user";
