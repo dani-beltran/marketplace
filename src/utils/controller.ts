@@ -28,7 +28,7 @@ type ControllerParams<T_Input, T_Output> = {
 type ActionParams<T_Input> = {
   req: NextApiRequest;
   validatedInput: Awaited<T_Input>;
-  session?: Session;
+  session: Session | null;
 };
 
 /**
@@ -52,7 +52,7 @@ export const runController = async <
   action,
 }: ControllerParams<T_Input, T_Output>): Promise<void> => {
   // If authentication is required check there is a valid session
-  let session;
+  let session: Session | null = null;
   if (authentication?.length) {
     session = await getServerSession(req, res, authOptions);
     if (!session) {
