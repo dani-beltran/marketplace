@@ -5,18 +5,11 @@ import { createUser } from "@/models/user";
 import { getMockJobInput } from "@/utils/mocks/job";
 import { getMockUserInput } from "@/utils/mocks/user";
 import { PaginatedResponse } from "@/utils/pagination";
-import { createTestSession } from "@/utils/test-helpers";
+import { createTestSession, deleteTestData } from "@/utils/test-helpers";
 import httpRequest, { AxiosError, AxiosResponse } from "axios";
 
 const endpointUrl = `http://${process.env.DOMAIN}/api/jobs`;
 const namingPrefix = "job-e2etest-";
-
-const deleteTestData = async (clientUser: User, contractorUser: User) => {
-  await db.$queryRaw`DELETE FROM "Job" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
-  await db.$queryRaw`DELETE FROM "User" WHERE "id" = ${clientUser.id} OR "id" = ${contractorUser.id}`;
-  await db.$queryRaw`DELETE FROM "Session" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
-  await db.$queryRaw`DELETE FROM "Account" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
-};
 
 describe("GET Jobs", () => {
   let clientUser: User;
@@ -72,7 +65,7 @@ describe("GET Jobs", () => {
 
   afterAll(async () => {
     // Make sure to delete all the test data after tests are done
-    await deleteTestData(clientUser, contractorUser);
+    await deleteTestData([clientUser, contractorUser]);
   });
 
   it("should return 200 and a list of jobs", async () => {
@@ -124,7 +117,7 @@ describe("POST Job", () => {
 
   afterAll(async () => {
     // Make sure to delete all the test data after tests are done
-    await deleteTestData(clientUser, contractorUser);
+    await deleteTestData([clientUser, contractorUser]);
   });
 
   it("should return 401 if user is not logged in", async () => {

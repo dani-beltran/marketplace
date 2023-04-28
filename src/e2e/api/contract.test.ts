@@ -1,11 +1,10 @@
 import { AxiosError } from "axios";
 import { createContract } from "@/models/contract";
 import { createUser } from "@/models/user";
-import { createTestSession } from "@/utils/test-helpers";
+import { createTestSession, deleteTestData } from "@/utils/test-helpers";
 import { getMockContractInput } from "@/utils/mocks/contract";
 import { getMockUserInput } from "@/utils/mocks/user";
 import { Job, User } from "@/lib/prisma-client";
-import db from "@/db-client";
 import httpRequest from "axios";
 import { LocalDate } from "@js-joda/core";
 import { createJob } from "@/models/job";
@@ -14,18 +13,13 @@ import { getMockJobInput } from "@/utils/mocks/job";
 const endpointUrl = `http://${process.env.DOMAIN}/api/contracts`;
 const namingPrefix = "contract-e2etest-";
 
-const deleteTestData = async (clientUser: User, contractorUser: User) => {
-  await db.$queryRaw`DELETE FROM "Contract" WHERE "clientId" = ${clientUser.id} OR "contractorId" = ${contractorUser.id}`;
-  await db.$queryRaw`DELETE FROM "Job" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
-  await db.$queryRaw`DELETE FROM "User" WHERE "id" = ${clientUser.id} OR "id" = ${contractorUser.id}`;
-  await db.$queryRaw`DELETE FROM "Session" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
-  await db.$queryRaw`DELETE FROM "Account" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
-};
-
 describe("GET contract", () => {
   let clientUser: User;
   let contractorUser: User;
   let clientSessionToken: string;
+  let adminUser: User;
+  let adminSessionToken: string;
+  let anotherClientUser: User;
 
   beforeAll(async () => {
     clientUser = await createUser(
@@ -34,13 +28,27 @@ describe("GET contract", () => {
         name: `${namingPrefix}client`,
       })
     );
+    clientSessionToken = await createTestSession(clientUser.id);
     contractorUser = await createUser(
       getMockUserInput({
         email: `${namingPrefix}contractor@testmail.com`,
         name: `${namingPrefix}contractor`,
       })
     );
-    clientSessionToken = await createTestSession(clientUser.id);
+    anotherClientUser = await createUser(
+      getMockUserInput({
+        email: `${namingPrefix}anotherclient@testmail.com`,
+        name: `${namingPrefix}another-client`,
+      })
+    );
+    adminUser = await createUser(
+      getMockUserInput({
+        name: `${namingPrefix}admin`,
+        email: `${namingPrefix}admin@testmail.com`,
+        role: 'admin',
+      })
+    );
+    adminSessionToken = await createTestSession(adminUser.id);
     await createContract(
       getMockContractInput({
         clientId: clientUser.id,
@@ -65,6 +73,7 @@ describe("GET contract", () => {
         jobId: (await createJob(getMockJobInput({ userId: clientUser.id }))).id,
       })
     );
+    // deleted contract
     await createContract(
       getMockContractInput({
         clientId: clientUser.id,
@@ -74,11 +83,20 @@ describe("GET contract", () => {
         jobId: (await createJob(getMockJobInput({ userId: clientUser.id }))).id,
       })
     );
+    // contract from a different client
+    await createContract(
+      getMockContractInput({
+        clientId: anotherClientUser.id,
+        contractorId: contractorUser.id,
+        name: "A test contract from a different client",
+        jobId: (await createJob(getMockJobInput({ userId: anotherClientUser.id }))).id,
+      })
+    );
   });
 
   afterAll(async () => {
     // Make sure to delete all the test data after tests are done
-    await deleteTestData(clientUser, contractorUser);
+    await deleteTestData([clientUser, contractorUser, adminUser, anotherClientUser]);
   });
 
   it("returns a 401 response when the request is not authenticated", async () => {
@@ -103,6 +121,16 @@ describe("GET contract", () => {
     });
     expect(response.status).toBe(200);
     expect(response.data).toHaveLength(3);
+  });
+
+  it("returns a 200 response and a list of all contracts for an admin user", async () => {
+    const response = await httpRequest.get(endpointUrl, {
+      headers: {
+        Cookie: `next-auth.session-token=${adminSessionToken}`
+      },
+    });
+    expect(response.status).toBe(200);
+    expect(response.data).toHaveLength(4);
   });
 });
 
@@ -131,7 +159,7 @@ describe("POST contract", () => {
 
   afterAll(async () => {
     // Make sure to delete all the test data after tests are done
-    await deleteTestData(clientUser, contractorUser);
+    await deleteTestData([clientUser, contractorUser]);
   });
 
   it("returns a 401 response when the request is not authenticated", async () => {

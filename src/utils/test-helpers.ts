@@ -1,21 +1,45 @@
 import db from "@/db-client";
 import { encode } from "next-auth/jwt";
 import { generateBase64Token } from "./crypto";
+import { Prisma, User } from "@/lib/prisma-client";
 
 /**
  * Flushes the database removing all data.
  * DANGEROUS - USE WITH CAUTION
  */
 export const flushDB = async () => {
-  await db.$queryRaw`DELETE FROM "Job"`;
-  await db.$queryRaw`DELETE FROM "Contract"`;
-  await db.$queryRaw`DELETE FROM "Session"`;
-  await db.$queryRaw`DELETE FROM "Account"`;
-  await db.$queryRaw`DELETE FROM "VerificationToken"`;
-  await db.$queryRaw`DELETE FROM "User"`;
+  await db.$executeRaw`DELETE FROM "Contract"`;
+  await db.$executeRaw`DELETE FROM "Job"`;
+  await db.$executeRaw`DELETE FROM "Session"`;
+  await db.$executeRaw`DELETE FROM "Account"`;
+  await db.$executeRaw`DELETE FROM "VerificationToken"`;
+  await db.$executeRaw`DELETE FROM "User"`;
   // Using DELETE FROM because using SQLite at the moment
   // TODO: Use TRUNCATE when using PostgreSQL
-  // await db.$queryRaw`TRUNCATE "User" CASCADE`;
+  // await db.$executeRaw`TRUNCATE "User" CASCADE`;
+};
+
+/**
+ * Removes all test data from the database related to the users provided.
+ * @param users
+ */
+export const deleteTestData = async (users: User[]) => {
+  const userIds = users.filter((u) => u !== undefined).map((u) => u.id);
+  await db.$executeRaw`DELETE FROM "Contract" WHERE "clientId" IN (${Prisma.join(
+    userIds
+  )}) OR "contractorId" IN (${Prisma.join(userIds)})`;
+  await db.$executeRaw`DELETE FROM "Job" WHERE "userId" IN (${Prisma.join(
+    userIds
+  )})`;
+  await db.$executeRaw`DELETE FROM "Session" WHERE "userId" IN (${Prisma.join(
+    userIds
+  )})`;
+  await db.$executeRaw`DELETE FROM "Account" WHERE "userId" IN (${Prisma.join(
+    userIds
+  )})`;
+  await db.$executeRaw`DELETE FROM "User" WHERE "User"."id" IN (${Prisma.join(
+    userIds
+  )})`;
 };
 
 /**
@@ -26,7 +50,7 @@ export const flushDB = async () => {
 const generateBearerToken = async (userId: number) => {
   const token = await encode({
     token: {
-      id: userId,
+      id: String(userId),
     },
     secret: process.env.NEXTAUTH_SECRET ?? "",
   });

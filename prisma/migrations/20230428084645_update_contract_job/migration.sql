@@ -53,5 +53,20 @@ INSERT INTO "new_Contract" ("clientId", "contractorId", "createdAt", "deletedAt"
 DROP TABLE "Contract";
 ALTER TABLE "new_Contract" RENAME TO "Contract";
 CREATE UNIQUE INDEX "Contract_jobId_key" ON "Contract"("jobId");
+CREATE TABLE "new_User" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "email" TEXT NOT NULL,
+    "emailVerified" DATETIME,
+    "name" TEXT,
+    "image" TEXT,
+    "role" TEXT NOT NULL DEFAULT 'user',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deletedAt" DATETIME
+);
+INSERT INTO "new_User" ("createdAt", "deletedAt", "email", "emailVerified", "id", "image", "name", "role", "updatedAt") SELECT "createdAt", "deletedAt", "email", "emailVerified", "id", "image", "name", coalesce("role", 'user') AS "role", "updatedAt" FROM "User";
+DROP TABLE "User";
+ALTER TABLE "new_User" RENAME TO "User";
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 PRAGMA foreign_key_check;
 PRAGMA foreign_keys=ON;

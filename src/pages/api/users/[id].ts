@@ -1,5 +1,5 @@
 import { User } from "@/lib/prisma-client";
-import { PublicUser, deleteUser, getUser } from "@/models/user";
+import { PublicUser, Role, deleteUser, getUser } from "@/models/user";
 import ActionError from "@/utils/ActionError";
 import { runController } from "@/utils/controller";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -15,7 +15,7 @@ export default async function userHandler(
   switch (method) {
     case "GET":
       await runController<unknown, PublicUser | User>({
-        authentication: true,
+        authentication: [Role.user],
         validation: {
           schema: mixed()
         },
@@ -42,15 +42,15 @@ export default async function userHandler(
 
     case "DELETE":
       await runController<unknown, User>({
-        authentication: true,
+        authentication: [Role.user],
         validation: {
           schema: mixed()
         },
         req,
         res,
         action: async ({session}) => {
-          // Only the user can delete its own account
-          if (id !== session!.user.id) {
+          // User can delete its own account, but no others. Admins can delete all.
+          if (id !== session!.user.id && session!.user.role !== Role.admin) {
             throw new ActionError(
               "Forbidden",
               `You are not authorized to delete this user`

@@ -3,6 +3,7 @@ import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github"
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import db from "@/db-client";
+import { Role } from "@/models/user";
 
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(db),
@@ -30,14 +31,16 @@ export const authOptions: AuthOptions = {
       else if (new URL(url).origin === baseUrl) return url;
       return baseUrl;
     },
-    async jwt({ token }) {
+    async jwt({ token, user }) {
       // Use this callback to add custom properties to the JWT
+      token.role = user?.role;
       return token;
     },
     async session({ session, user }) {
       // Use this callback to send properties to the client through the session.
       if (session.user) {
-        session.user["id"] = Number(user.id);
+        session.user.id = Number(user.id);
+        session.user.role = user.role ?? Role.user;
       }
       return session;
     },

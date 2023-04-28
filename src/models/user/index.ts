@@ -3,6 +3,11 @@ import { User, Prisma } from "@/lib/prisma-client";
 
 export type PublicUser = Pick<User, "id" | "name" | "image">;
 
+export enum Role {
+  user = "user",
+  admin = "admin",
+}
+
 export const getUser = async (id: number) => {
   const user = await db.user.findUnique({
     where: {

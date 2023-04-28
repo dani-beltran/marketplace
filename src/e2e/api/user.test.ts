@@ -1,20 +1,12 @@
 import db from "@/db-client";
 import { User } from "@/lib/prisma-client";
-import { createUser } from "@/models/user";
+import { Role, createUser } from "@/models/user";
 import { getMockUserInput } from "@/utils/mocks/user";
-import { createTestSession } from "@/utils/test-helpers";
+import { createTestSession, deleteTestData } from "@/utils/test-helpers";
 import httpRequest, { AxiosError } from "axios";
 
 const endpointUrl = `http://${process.env.DOMAIN}/api/users`;
-const namingPrefix = 'user-e2etest-'
-
-const deleteTestData = async (clientUser: User, contractorUser: User) => {
-  await db.$queryRaw`DELETE FROM "Contract" WHERE "clientId" = ${clientUser.id} OR "contractorId" = ${contractorUser.id}`;
-  await db.$queryRaw`DELETE FROM "User" WHERE email = ${clientUser.email} OR email = ${contractorUser.email}`;
-  await db.$queryRaw`DELETE FROM "Session" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
-  await db.$queryRaw`DELETE FROM "Account" WHERE "userId" = ${clientUser.id} OR "userId" = ${contractorUser.id}`;
-};
-
+const namingPrefix = "user-e2etest-";
 
 describe("GET Users", () => {
   let clientUser: User;
@@ -37,7 +29,7 @@ describe("GET Users", () => {
 
   afterAll(async () => {
     // Make sure to delete all the test data after tests are done
-    await deleteTestData(clientUser, contractorUser);
+    await deleteTestData([clientUser, contractorUser]);
   });
 
   it("should return 200 and a list of users with only with public data", async () => {
@@ -48,14 +40,14 @@ describe("GET Users", () => {
     ).toStrictEqual({
       id: clientUser.id,
       name: clientUser.name,
-      image: clientUser.image
+      image: clientUser.image,
     });
     expect(
       response.data.find((user: User) => user.id === contractorUser.id)
     ).toStrictEqual({
       id: contractorUser.id,
       name: contractorUser.name,
-      image: contractorUser.image
+      image: contractorUser.image,
     });
   });
 });
@@ -85,14 +77,14 @@ describe("GET User", () => {
 
   afterAll(async () => {
     // Make sure to delete all the test data after tests are done
-    await deleteTestData(clientUser, contractorUser);
+    await deleteTestData([clientUser, contractorUser]);
   });
 
   it("should return 401 for unauthenticated requests", async () => {
     try {
       await httpRequest.get(endpointUrl + "/" + clientUser.id);
       expect(false).toBeTruthy();
-    } catch(error) {
+    } catch (error) {
       expect((<AxiosError>error).response?.status).toBe(401);
       expect((<AxiosError>error).response?.data).toStrictEqual({
         name: "Unauthorized",
@@ -104,7 +96,7 @@ describe("GET User", () => {
   it("should return 200 and limited user data for other users requesting it", async () => {
     const response = await httpRequest.get(endpointUrl + "/" + clientUser.id, {
       headers: {
-        Cookie: `next-auth.session-token=${contractorSessionToken}`
+        Cookie: `next-auth.session-token=${contractorSessionToken}`,
       },
     });
     expect(response.status).toBe(200);
@@ -118,7 +110,7 @@ describe("GET User", () => {
   it("should return 200 and full data for users requesting their own data", async () => {
     const response = await httpRequest.get(endpointUrl + "/" + clientUser.id, {
       headers: {
-        Cookie: `next-auth.session-token=${clientSessionToken}`
+        Cookie: `next-auth.session-token=${clientSessionToken}`,
       },
     });
     expect(response.status).toBe(200);
@@ -135,6 +127,8 @@ describe("DELETE User", () => {
   let contractorUser: User;
   let clientSessionToken: string;
   let contractorSessionToken: string;
+  let adminUser: User;
+  let adminSessionToken: string;
 
   beforeAll(async () => {
     clientUser = await createUser(
@@ -143,6 +137,7 @@ describe("DELETE User", () => {
         name: `${namingPrefix}client`,
       })
     );
+    clientSessionToken = await createTestSession(clientUser.id);
     contractorUser = await createUser(
       getMockUserInput({
         email: `${namingPrefix}contractor@testmail.com`,
@@ -150,19 +145,26 @@ describe("DELETE User", () => {
       })
     );
     contractorSessionToken = await createTestSession(contractorUser.id);
-    clientSessionToken = await createTestSession(clientUser.id);
+    adminUser = await createUser(
+      getMockUserInput({
+        email: `${namingPrefix + "admin"}@testmail.com`,
+        name: `${namingPrefix}admin`,
+        role: Role.admin,
+      })
+    );
+    adminSessionToken = await createTestSession(adminUser.id);
   });
 
   afterAll(async () => {
     // Make sure to delete all the test data after tests are done
-    await deleteTestData(clientUser, contractorUser);
+    await deleteTestData([clientUser, contractorUser, adminUser]);
   });
 
   it("should return 401 for unauthenticated requests", async () => {
     try {
       await httpRequest.delete(endpointUrl + "/" + clientUser.id);
       expect(false).toBeTruthy();
-    } catch(error) {
+    } catch (error) {
       expect((<AxiosError>error).response?.status).toBe(401);
       expect((<AxiosError>error).response?.data).toStrictEqual({
         name: "Unauthorized",
@@ -175,11 +177,11 @@ describe("DELETE User", () => {
     try {
       await httpRequest.delete(endpointUrl + "/" + clientUser.id, {
         headers: {
-          Cookie: `next-auth.session-token=${contractorSessionToken}`
+          Cookie: `next-auth.session-token=${contractorSessionToken}`,
         },
       });
       expect(false).toBeTruthy();
-    } catch(error) {
+    } catch (error) {
       expect((<AxiosError>error).response?.status).toBe(403);
       expect((<AxiosError>error).response?.data).toStrictEqual({
         name: "Forbidden",
@@ -192,10 +194,22 @@ describe("DELETE User", () => {
     try {
       await httpRequest.delete(endpointUrl + "/" + clientUser.id, {
         headers: {
-          Cookie: `next-auth.session-token=${clientSessionToken}`
+          Cookie: `next-auth.session-token=${clientSessionToken}`,
         },
       });
-    } catch(error) {
+    } catch (error) {
+      expect(false).toBeTruthy();
+    }
+  });
+
+  it("should return 200 for an admin trying to delete an user account", async () => {
+    try {
+      await httpRequest.delete(endpointUrl + "/" + contractorUser.id, {
+        headers: {
+          Cookie: `next-auth.session-token=${adminSessionToken}`,
+        },
+      });
+    } catch (error) {
       expect(false).toBeTruthy();
     }
   });
@@ -204,11 +218,11 @@ describe("DELETE User", () => {
     try {
       await httpRequest.delete(endpointUrl + "/" + clientUser.id, {
         headers: {
-          Cookie: `next-auth.session-token=${clientSessionToken}`
+          Cookie: `next-auth.session-token=${clientSessionToken}`,
         },
       });
       expect(false).toBeTruthy();
-    } catch(error) {
+    } catch (error) {
       expect((<AxiosError>error).response?.status).toBe(401);
       expect((<AxiosError>error).response?.data).toStrictEqual({
         name: "Unauthorized",

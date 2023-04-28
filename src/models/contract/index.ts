@@ -12,6 +12,16 @@ import currency from "currency.js";
 
 /**
  * TODO: Add pagination
+ * To be used only by admin users.
+ * @returns all contracts.
+ */
+export const getAllContracts = async () => {
+  const contracts = await db.contract.findMany();
+  return contracts;
+};
+
+/**
+ * TODO: Add pagination
  * @returns all contracts for a given user independently of whether they are
  * the client or the contractor.
  * @param userId The user ID

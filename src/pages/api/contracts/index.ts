@@ -1,12 +1,14 @@
 import { Contract } from "@/lib/prisma-client";
 import {
   createContract,
+  getAllContracts,
   getUserContracts,
   validateContractInput,
 } from "@/models/contract";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { object, string, number, date, InferType, mixed } from "yup";
 import { runController } from "@/utils/controller";
+import { Role } from "@/models/user";
 
 export default async function handler(
   req: NextApiRequest,
@@ -24,7 +26,7 @@ export default async function handler(
     // TODO: Add filter to Show only contracts where the user is the contractor
     case "GET":
       await runController<unknown, Contract[]>({
-        authentication: true,
+        authentication: [Role.user],
         validation: {
           schema: mixed()
         },
@@ -32,8 +34,11 @@ export default async function handler(
         res,
         action: async ({ session }) => {
           const userId = session!.user.id;
-          const contracts = await getUserContracts(userId);
-          return contracts;
+          const isAdmin = session!.user.role === Role.admin;
+          if (isAdmin) {
+            return await getAllContracts();
+          }
+          return getUserContracts(userId);
         },
       });
       break;
@@ -53,7 +58,7 @@ export default async function handler(
       });
       type ContractInput = InferType<typeof contractSchema>;
       await runController<ContractInput, Contract>({
-        authentication: true,
+        authentication: [Role.user],
         validation: {
           schema: contractSchema,
         },

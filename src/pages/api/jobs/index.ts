@@ -8,6 +8,7 @@ import {
   PaginationParams,
   getPaginationSchema,
 } from "@/utils/pagination";
+import { Role } from "@/models/user";
 
 export default async function handler(
   req: NextApiRequest,
@@ -24,7 +25,8 @@ export default async function handler(
         "updatedAt",
       ]);
       await runController<PaginationParams, PaginatedResponse<Job>>({
-        authentication: false,
+        // Anybody can see the jobs in the platform
+        authentication: [],
         validation: {
           schema: searchParamsSchema,
         },
@@ -55,7 +57,7 @@ export default async function handler(
       });
       type JobInput = InferType<typeof jobInput>;
       await runController<JobInput, Job>({
-        authentication: true,
+        authentication: [Role.user],
         validation: {
           schema: jobInput,
         },

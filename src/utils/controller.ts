@@ -12,9 +12,10 @@ import ActionError from "./ActionError";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../pages/api/auth/[...nextauth]";
 import { Session } from "next-auth";
+import { Role } from "@/models/user";
 
 type ControllerParams<T_Input, T_Output> = {
-  authentication?: boolean;
+  authentication?: Role[];
   validation: {
     schema: Schema<T_Input>;
     options?: { abortEarly?: boolean };
@@ -52,12 +53,21 @@ export const runController = async <
 }: ControllerParams<T_Input, T_Output>): Promise<void> => {
   // If authentication is required check there is a valid session
   let session;
-  if (authentication) {
+  if (authentication?.length) {
     session = await getServerSession(req, res, authOptions);
     if (!session) {
       res.status(401).json({
         name: "Unauthorized",
         message: "You must be logged in to access this resource.",
+      });
+      return;
+    }
+    // Check the user has the required role. Admins can access all resources.
+    const userRole = session.user.role;
+    if (!authentication.includes(userRole) && userRole !== Role.admin) {
+      res.status(403).json({
+        name: "Forbidden",
+        message: "You are not authorized to access this resource.",
       });
       return;
     }

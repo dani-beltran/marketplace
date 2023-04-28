@@ -19,7 +19,7 @@ export default async function handler(
       // TODO: Filter deleted out
       await runController<unknown, PublicUser[]>({
         // Anybody can see the users in the platform
-        authentication: false,
+        authentication: [],
         validation: {
           schema: mixed()
         },
