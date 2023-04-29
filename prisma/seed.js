@@ -17,25 +17,20 @@ async function runSeeding() {
   });
   try {
     // Reset DB
-    await db.$executeRaw`DELETE FROM "Job"`;
-    await db.$executeRaw`DELETE FROM "User"`;
-    await db.$executeRaw`
-      UPDATE "sqlite_sequence" SET "seq" = 0 WHERE "name" = 'User';
-    `;
-    await db.$executeRaw`
-      UPDATE "sqlite_sequence" SET "seq" = 0 WHERE "name" = 'Job';
-    `;
+    await db.$executeRaw`TRUNCATE TABLE "User" CASCADE;`;
     // Insert Data
-    const res = await db.$executeRaw`
+    const res = await db.$queryRaw`
       INSERT INTO "User" ("name", "email", "image") 
       VALUES('Pepe', 'pepe@dummy-mail.com', 'https://ih1.redbubble.net/image.3287754550.6742/st,small,507x507-pad,600x600,f8f8f8.u2.jpg')
+      RETURNING "id"
     `;
+    const userId = res[0].id;
     for (let i = 0; i < 60; i++) {
       const name = `Issue #${i}`;
       const description = 'Lorem impsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
       await db.$executeRaw`
         INSERT INTO "Job" ("name", "description", "userId", "issueUrl") 
-        VALUES(${name}, ${description}, "1", "https://github.com/dani-beltran/marketplace/issues/1")
+        VALUES(${name}, ${description}, ${userId}, 'https://github.com/dani-beltran/marketplace/issues/1')
       `;
     }
     db.$disconnect();

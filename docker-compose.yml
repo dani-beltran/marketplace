@@ -1,0 +1,18 @@
+version: "3"
+
+services:
+  db:
+    image: postgres:15.2
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: workandlife
+      POSTGRES_USER: db_user
+      POSTGRES_DB: postgres
+    entrypoint: sh -c "
+      echo \"psql -v ON_ERROR_STOP=1 --username db_user --dbname postgres <<-EOSQL\\n
+      CREATE DATABASE marketplace;\\n
+      GRANT ALL PRIVILEGES ON DATABASE marketplace TO db_user;\\nEOSQL\" > /docker-entrypoint-initdb.d/init-databases.sh;
+      docker-entrypoint.sh postgres
+      "
+
