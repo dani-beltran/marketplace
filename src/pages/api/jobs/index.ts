@@ -12,11 +12,13 @@ import {
 import {
   PaginatedResponse,
   PaginationParams,
+  PaginationValidatedParams,
   getPaginationSchema,
 } from "@/utils/pagination";
 import { Role } from "@/models/user";
 
-export type ListJobsQuery = { userId?: number } & PaginationParams;
+type GetJobsValidatedQuery = { userId?: number } & PaginationValidatedParams;
+export type GetJobsQuery = { userId?: number } & PaginationParams;
 
 const createJobSchema = object({
   name: string().required(),
@@ -37,7 +39,7 @@ export default async function handler(
       const searchParamsSchema = getPaginationSchema({
         orderByOpts: ["createdAt", "updatedAt"],
       });
-      await runController<ListJobsQuery, PaginatedResponse<Job>>({
+      await runController<GetJobsValidatedQuery, PaginatedResponse<Job>>({
         // Anybody can see the jobs in the platform
         authentication: [],
         validation: {

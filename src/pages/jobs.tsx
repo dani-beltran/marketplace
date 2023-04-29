@@ -3,8 +3,8 @@ import Head from "next/head";
 import { Container } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import type {} from "@mui/x-data-grid/themeAugmentation";
-import { pageFetch } from "@/utils/pagination";
 import { Job } from "@/lib/prisma-client";
+import { getJobs } from "@/utils/api-client";
 
 const columns: GridColDef[] = [
   { field: "name", headerName: "Name", width: 150 },
@@ -21,7 +21,7 @@ export default function Jobs() {
   const [error, setError] = useState(null);
 
   const fetchJobs = async () => {
-    return pageFetch<Job>(process.env.NEXT_PUBLIC_API_URL + "/jobs", {
+    return getJobs({
       page: paginationModel.page,
       pageSize: paginationModel.pageSize,
     })
@@ -48,7 +48,7 @@ export default function Jobs() {
         />
       </Head>
 
-      <Container maxWidth="sm" sx={{marginBottom: '40px'}}>
+      <Container maxWidth="sm" sx={{ marginBottom: "40px" }}>
         <h1>Jobs</h1>
       </Container>
       {error && (

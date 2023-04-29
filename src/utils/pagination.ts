@@ -9,15 +9,16 @@
 // unique column such as ID or a timestamp. It will be good for a infinity scroll
 // though.
 //
-import axios from "axios";
-import { mixed, number, object, string } from "yup";
+import { mixed, number, string } from "yup";
 
-export type PaginationParams = {
+export type PaginationValidatedParams = {
   pageSize: number;
   page: number;
   orderBy: string;
   order: "asc" | "desc";
 };
+
+export type PaginationParams = Partial<PaginationValidatedParams>
 
 export type PaginatedResponse<T> = {
   data: T[];
@@ -48,22 +49,3 @@ export const getPaginationSchema = (
     order: mixed<"asc" | "desc">().oneOf(["asc", "desc"]).default("desc"),
   };
 };
-
-/**
- * Fetches a page of results from the API.
- * @param url 
- * @param pagination 
- * @returns 
- */
-export const pageFetch = async <T>(
-  url: string,
-  pagination: {
-    pageSize: number;
-    page: number;
-  }
-): Promise<PaginatedResponse<T>> => {
-  const pageUrl = new URL(url);
-  pageUrl.searchParams.set("page", pagination.page.toString());
-  pageUrl.searchParams.set("pageSize", pagination.pageSize.toString());
-  return axios(pageUrl.toString()).then((res) => res.data);
-}

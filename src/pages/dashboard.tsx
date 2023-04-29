@@ -12,12 +12,11 @@ import {
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import type {} from "@mui/x-data-grid/themeAugmentation";
-import { pageFetch } from "@/utils/pagination";
 import { Job } from "@/lib/prisma-client";
 import { useSession } from "next-auth/react";
 import RequireLogin from "@/components/requireLogin";
 import { CreateJobBody } from "./api/jobs";
-import { createJob } from "@/utils/api-client";
+import { createJob, getJobs } from "@/utils/api-client";
 import Loading from "@/components/loading";
 
 const columns: GridColDef[] = [
@@ -38,11 +37,11 @@ export default function Dashboard() {
   const [openForm, setOpenForm] = useState(false);
 
   const fetchJobs = async (userId: number) => {
-    return pageFetch<Job>(
-      process.env.NEXT_PUBLIC_API_URL + "/jobs?userId=" + userId,
+    return getJobs(
       {
         page: paginationModel.page,
         pageSize: paginationModel.pageSize,
+        userId,
       }
     )
       .then(({ data, pagination }) => {
