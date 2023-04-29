@@ -41,14 +41,14 @@ export default function Jobs() {
   return (
     <>
       <Head>
-        <title>Git Marketplace</title>
+        <title>Jobs - A Git Marketplace</title>
         <meta
           name="description"
           content="A marketplace for developers collaboration on open source projects"
         />
       </Head>
 
-      <Container maxWidth="sm">
+      <Container maxWidth="sm" sx={{marginBottom: '40px'}}>
         <h1>Jobs</h1>
       </Container>
       {error && (

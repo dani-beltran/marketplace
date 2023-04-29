@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Git Marketplace</title>
+      <title>A Git Marketplace</title>
         <meta name="description" content="A marketplace for developers collaboration on open source projects" />
       </Head>
       <main className={styles.main}>
