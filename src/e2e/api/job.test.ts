@@ -28,38 +28,16 @@ describe("GET Jobs", () => {
         name: `${namingPrefix}contractor`,
       })
     );
-    jobs.push(
-      await createJob(
-        getMockJobInput({
-          name: `${namingPrefix}job1`,
-          userId: clientUser.id,
-        })
-      )
-    );
-    jobs.push(
-      await createJob(
-        getMockJobInput({
-          name: `${namingPrefix}job2`,
-          userId: clientUser.id,
-        })
-      )
-    );
-    jobs.push(
-      await createJob(
-        getMockJobInput({
-          name: `${namingPrefix}job3`,
-          userId: clientUser.id,
-        })
-      )
-    );
-    jobs.push(
-      await createJob(
-        getMockJobInput({
-          name: `${namingPrefix}job4`,
-          userId: contractorUser.id,
-        })
-      )
-    );
+    for (let i = 0; i < 15; i++) {
+      jobs.push(
+        await createJob(
+          getMockJobInput({
+            name: `${namingPrefix}job${i}`,
+            userId: clientUser.id,
+          })
+        )
+      );
+    }
   });
 
   afterAll(async () => {
@@ -67,29 +45,33 @@ describe("GET Jobs", () => {
     await deleteTestData([clientUser, contractorUser]);
   });
 
-  it("should return 200 and a list of jobs", async () => {
-    const response = await httpRequest.get<any, AxiosResponse<PaginatedResponse<Job>>>(
-      endpointUrl
-    );
+  it("should return 200 and a list of jobs with default pagination", async () => {
+    const response = await httpRequest.get<
+      any,
+      AxiosResponse<PaginatedResponse<Job>>
+    >(endpointUrl);
     expect(response.status).toBe(200);
     const { data, pagination } = response.data;
-    expect(
-      data.filter((job) => job.userId === clientUser.id)
-    ).toHaveLength(3);
-    expect(
-      data.filter((job) => job.userId === contractorUser.id)
-    ).toHaveLength(1);
-    expect(
-      data.find((job) => job.userId === contractorUser.id)
-    ).toStrictEqual({
-      ...jobs[3],
-      createdAt: jobs[3].createdAt.toISOString(),
-      updatedAt: jobs[3].updatedAt.toISOString(),
+    expect(data).toHaveLength(10);
+    expect(pagination).toStrictEqual({
+      page: 0,
+      pageSize: 10,
+      count: expect.any(Number),
     });
+  });
+
+  it("should return 200 and a list of jobs paginated as requested", async () => {
+    const response = await httpRequest.get<
+      any,
+      AxiosResponse<PaginatedResponse<Job>>
+    >(endpointUrl + "?page=1&pageSize=11");
+    expect(response.status).toBe(200);
+    const { data, pagination } = response.data;
+    expect(data).toHaveLength(11);
     expect(pagination).toStrictEqual({
       page: 1,
-      size: 10,
-      total: expect.any(Number),
+      pageSize: 11,
+      count: expect.any(Number),
     });
   });
 });
@@ -141,7 +123,7 @@ describe("POST Job", () => {
         },
         {
           headers: {
-            Cookie: `next-auth.session-token=${clientSessionToken}`
+            Cookie: `next-auth.session-token=${clientSessionToken}`,
           },
         }
       );
@@ -154,14 +136,17 @@ describe("POST Job", () => {
 
   it("should return 400 if description is not provided", async () => {
     try {
-      await httpRequest.post(endpointUrl, {
-        name: "test job",
-      },
-      {
-        headers: {
-          Cookie: `next-auth.session-token=${clientSessionToken}`
+      await httpRequest.post(
+        endpointUrl,
+        {
+          name: "test job",
         },
-      });
+        {
+          headers: {
+            Cookie: `next-auth.session-token=${clientSessionToken}`,
+          },
+        }
+      );
       expect(true).toBe(false);
     } catch (error) {
       const axiosError = error as AxiosError;
@@ -171,15 +156,18 @@ describe("POST Job", () => {
 
   it("should return 200 and the created job", async () => {
     try {
-      const res = await httpRequest.post(endpointUrl, {
-        name: "test job",
-        description: "test description"
-      },
-      {
-        headers: {
-          Cookie: `next-auth.session-token=${clientSessionToken}`
+      const res = await httpRequest.post(
+        endpointUrl,
+        {
+          name: "test job",
+          description: "test description",
         },
-      });
+        {
+          headers: {
+            Cookie: `next-auth.session-token=${clientSessionToken}`,
+          },
+        }
+      );
       expect(res.status).toBe(200);
       expect(res.data).toStrictEqual({
         id: expect.any(Number),
@@ -189,11 +177,10 @@ describe("POST Job", () => {
         issueUrl: null,
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
-        deletedAt: null
+        deletedAt: null,
       });
     } catch (error) {
       expect(true).toBe(false);
     }
   });
-
 });
