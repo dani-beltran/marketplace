@@ -16,7 +16,7 @@
  */
 class ActionError extends Error {
   
-  constructor(name: string, message: string, public code?: number) {
+  constructor(name: ActionErrorName, message: string, public code?: number) {
     super(message);
     this.name = name;
     this.code = code;
@@ -53,5 +53,6 @@ class ActionError extends Error {
   }
 }
 
+export type ActionErrorName = "BadRequest" | "Unauthorized" | "Forbidden" | "NotFound" | "Conflict" | "InternalServerError";
 
 export default ActionError;
