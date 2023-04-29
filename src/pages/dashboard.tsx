@@ -20,8 +20,9 @@ import { createJob, getJobs } from "@/utils/api-client";
 import Loading from "@/components/loading";
 
 const columns: GridColDef[] = [
-  { field: "name", headerName: "Name", width: 150 },
-  { field: "description", headerName: "Brief description", width: 400 },
+  { field: "name", headerName: "Name", width: 100 },
+  { field: "description", headerName: "Brief description", width: 300 },
+  { field: "createdAt", headerName: "Published", width: 150 },
 ];
 
 export default function Dashboard() {
@@ -98,7 +99,7 @@ export default function Dashboard() {
         )}
         {ready && jobs.length !== 0 && (
           <DataGrid
-            rows={jobs}
+            rows={formatJobs(jobs)}
             columns={columns}
             loading={false}
             paginationMode="server"
@@ -129,6 +130,14 @@ export default function Dashboard() {
     </>
   );
 }
+
+const formatJobs = (jobs: Job[]) => {
+  return jobs.map((job) => ({
+    ...job,
+    createdAt: new Date(job.createdAt).toLocaleDateString(),
+  }));
+};
+
 
 function CreateJobDialogForm({
   open,

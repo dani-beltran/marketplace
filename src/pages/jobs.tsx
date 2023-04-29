@@ -7,8 +7,9 @@ import { Job } from "@/lib/prisma-client";
 import { getJobs } from "@/utils/api-client";
 
 const columns: GridColDef[] = [
-  { field: "name", headerName: "Name", width: 150 },
-  { field: "description", headerName: "Brief description", width: 400 },
+  { field: "name", headerName: "Name", width: 100 },
+  { field: "description", headerName: "Brief description", width: 300 },
+  { field: "createdAt", headerName: "Published", width: 150 },
 ];
 
 export default function Jobs() {
@@ -48,7 +49,8 @@ export default function Jobs() {
         />
       </Head>
 
-      <Container maxWidth="sm" sx={{ marginBottom: "40px" }}>
+      <Container maxWidth="sm">
+      <Container sx={{ marginBottom: "3rem" }}>
         <h1>Jobs</h1>
       </Container>
       {error && (
@@ -58,7 +60,7 @@ export default function Jobs() {
       )}
       {!error && (
         <DataGrid
-          rows={jobs}
+          rows={formatJobs(jobs)}
           columns={columns}
           loading={false}
           paginationMode="server"
@@ -69,6 +71,14 @@ export default function Jobs() {
           disableRowSelectionOnClick
         ></DataGrid>
       )}
+      </Container>
     </>
   );
 }
+
+const formatJobs = (jobs: Job[]) => {
+  return jobs.map((job) => ({
+    ...job,
+    createdAt: new Date(job.createdAt).toLocaleDateString(),
+  }));
+};
