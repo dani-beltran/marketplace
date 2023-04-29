@@ -25,14 +25,17 @@ async function runSeeding() {
       RETURNING "id"
     `;
     const userId = res[0].id;
+    let promises = [];
     for (let i = 0; i < 60; i++) {
       const name = `Issue #${i}`;
       const description = 'Lorem impsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
-      await db.$executeRaw`
+      const query = db.$executeRaw`
         INSERT INTO "Job" ("name", "description", "userId", "issueUrl") 
         VALUES(${name}, ${description}, ${userId}, 'https://github.com/dani-beltran/marketplace/issues/1')
       `;
+      promises.push(query);
     }
+    await Promise.all(promises);
     db.$disconnect();
   } catch (e) {
     db.$disconnect();
