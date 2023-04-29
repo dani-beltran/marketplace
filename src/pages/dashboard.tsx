@@ -45,6 +45,7 @@ export default function Dashboard() {
       }
     )
       .then(({ data, pagination }) => {
+        setLoading(false);
         setData(data);
         setRowCount(pagination.count);
       })
@@ -56,7 +57,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (session?.user?.id) {
       fetchJobs(session.user.id);
-      setLoading(false);
     }
   }, [paginationModel, session]);
 
