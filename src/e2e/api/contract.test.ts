@@ -49,32 +49,20 @@ describe("GET contract", () => {
       })
     );
     adminSessionToken = await createTestSession(adminUser.id);
-    await createContract(
-      getMockContractInput({
-        clientId: clientUser.id,
-        contractorId: contractorUser.id,
-        name: "A test contract 1",
-        jobId: (await createJob(getMockJobInput({ userId: clientUser.id }))).id,
-      })
-    );
-    await createContract(
-      getMockContractInput({
-        clientId: clientUser.id,
-        contractorId: contractorUser.id,
-        name: "A test contract 2",
-        jobId: (await createJob(getMockJobInput({ userId: clientUser.id }))).id,
-      })
-    );
-    await createContract(
-      getMockContractInput({
-        clientId: clientUser.id,
-        contractorId: contractorUser.id,
-        name: "A test contract 3",
-        jobId: (await createJob(getMockJobInput({ userId: clientUser.id }))).id,
-      })
-    );
+    // Create some contracts
+    const contracts = [];
+    for (let i = 0; i < 3; i++) {
+      contracts.push(createContract(
+        getMockContractInput({
+          clientId: clientUser.id,
+          contractorId: contractorUser.id,
+          name: "A test contract " + i,
+          jobId: (await createJob(getMockJobInput({ userId: clientUser.id }))).id,
+        })
+      ));
+    }
     // deleted contract
-    await createContract(
+    contracts.push(createContract(
       getMockContractInput({
         clientId: clientUser.id,
         contractorId: contractorUser.id,
@@ -82,16 +70,17 @@ describe("GET contract", () => {
         name: "A deleted test contract",
         jobId: (await createJob(getMockJobInput({ userId: clientUser.id }))).id,
       })
-    );
+    ));
     // contract from a different client
-    await createContract(
+    contracts.push(createContract(
       getMockContractInput({
         clientId: anotherClientUser.id,
         contractorId: contractorUser.id,
         name: "A test contract from a different client",
         jobId: (await createJob(getMockJobInput({ userId: anotherClientUser.id }))).id,
       })
-    );
+    ));
+    await Promise.all(contracts);
   });
 
   afterAll(async () => {

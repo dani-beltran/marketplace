@@ -13,8 +13,7 @@ const namingPrefix = "job-e2etest-";
 describe("GET Jobs", () => {
   let clientUser: User;
   let contractorUser: User;
-  let jobs: Job[] = [];
-
+  
   beforeAll(async () => {
     clientUser = await createUser(
       getMockUserInput({
@@ -28,9 +27,10 @@ describe("GET Jobs", () => {
         name: `${namingPrefix}contractor`,
       })
     );
+    const jobs = [];
     for (let i = 0; i < 15; i++) {
       jobs.push(
-        await createJob(
+        createJob(
           getMockJobInput({
             name: `${namingPrefix}job${i}`,
             userId: clientUser.id,
@@ -38,6 +38,7 @@ describe("GET Jobs", () => {
         )
       );
     }
+    await Promise.all(jobs);
   });
 
   afterAll(async () => {
