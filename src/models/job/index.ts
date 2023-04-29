@@ -2,6 +2,10 @@ import db from "@/db-client";
 import { Job, Prisma } from "@/lib/prisma-client";
 import { PaginationParams } from "@/utils/pagination";
 
+/**
+ * @param job 
+ * @returns creates a job with the given data
+ */
 export const createJob = async (job: Prisma.JobCreateInput) => {
   const createdJob = await db.job.create({
     data: {
@@ -11,6 +15,10 @@ export const createJob = async (job: Prisma.JobCreateInput) => {
   return createdJob;
 };
 
+/**
+ * @param id 
+ * @returns a job with the given id
+ */
 export const getJob = async (id: number) => {
   const job = await db.job.findUnique({
     where: {
@@ -63,7 +71,23 @@ export const getUserJobs = async (
   return jobs;
 };
 
+/**
+ * @returns The number of jobs in the database
+ */
 export const countJobs = async () => {
   const count = await db.job.count();
+  return count;
+}
+
+/**
+ * @param userId 
+ * @returns The number of jobs a user has created
+ */
+export const countUserJobs = async (userId: number) => {
+  const count = await db.job.count({
+    where: {
+      userId,
+    },
+  });
   return count;
 }

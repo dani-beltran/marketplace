@@ -2,7 +2,13 @@ import { Job } from "@/lib/prisma-client";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { object, string, InferType, number } from "yup";
 import { runController } from "@/utils/controller";
-import { countJobs, createJob, getJobs, getUserJobs } from "@/models/job";
+import {
+  countJobs,
+  countUserJobs,
+  createJob,
+  getJobs,
+  getUserJobs,
+} from "@/models/job";
 import {
   PaginatedResponse,
   PaginationParams,
@@ -10,7 +16,14 @@ import {
 } from "@/utils/pagination";
 import { Role } from "@/models/user";
 
-type ListJobsQuery = { userId?: number } & PaginationParams;
+export type ListJobsQuery = { userId?: number } & PaginationParams;
+
+const createJobSchema = object({
+  name: string().required(),
+  issueUrl: string().url(),
+  description: string().required(),
+});
+export type CreateJobBody = InferType<typeof createJobSchema>;
 
 export default async function handler(
   req: NextApiRequest,
@@ -36,10 +49,16 @@ export default async function handler(
         req,
         res,
         action: async ({ validatedInput: input }) => {
-          const fetchJobs = input.userId
-            ? getUserJobs(input.userId, input)
-            : getJobs(input);
-          const [jobs, count] = await Promise.all([fetchJobs, countJobs()]);
+          let jobs: Job[];
+          let count: number;
+          if (input.userId) {
+            [jobs, count] = await Promise.all([
+              getUserJobs(input.userId, input),
+              countUserJobs(input.userId),
+            ]);
+          } else {
+            [jobs, count] = await Promise.all([getJobs(input), countJobs()]);
+          }
           const response: PaginatedResponse<Job> = {
             data: jobs,
             pagination: {
@@ -54,28 +73,21 @@ export default async function handler(
       break;
 
     case "POST":
-      const jobInput = object({
-        name: string().required(),
-        description: string().required(),
-      });
-      type JobInput = InferType<typeof jobInput>;
-      await runController<JobInput, Job>({
+      await runController<CreateJobBody, Job>({
         authentication: [Role.user],
         validation: {
-          schema: jobInput,
+          schema: createJobSchema,
         },
         req,
         res,
         action: async ({ validatedInput: input, session }) => {
           // Only the logged-in user can create a job posting
           const userId = session!.user.id;
-          const jobInput = {
-            name: input.name,
-            description: input.description,
-            user: { connect: { id: userId } },
-          };
           // Create the job and return it
-          const job = await createJob(jobInput);
+          const job = await createJob({
+            ...input,
+            user: { connect: { id: userId } },
+          });
           return job;
         },
       });
