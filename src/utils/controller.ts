@@ -58,21 +58,7 @@ export const runController = async <
     // If authentication is required check there is a valid session
     let session: Session | null = null;
     if (authentication?.length) {
-      session = await getServerSession(req, res, authOptions);
-      if (!session) {
-        throw new ActionError(
-          "Unauthorized",
-          "You must be logged in to access this resource."
-        );
-      }
-      // Check the user has the required role. Admins can access all resources.
-      const userRole = session.user.role;
-      if (!authentication.includes(userRole) && userRole !== Role.admin) {
-        throw new ActionError(
-          "Forbidden",
-          "You are not authorized to access this resource."
-        );
-      }
+      session = await handleAuth(req, res, authentication);
     }
     // Validation is always required, validate the request body or query params
     const values = req.method === "GET" ? req.query : req.body;
@@ -100,6 +86,37 @@ export const runController = async <
 };
 
 /**
+ * This function handles the authentication of a request.
+ * @param req
+ * @param res
+ * @param allowedRoles The user roles that are allowed to access this resource
+ * @returns the user session
+ * @throws ActionError if the user is not logged in or does not have the required role
+ */
+const handleAuth = async (
+  req: NextApiRequest,
+  res: NextApiResponse,
+  allowedRoles: Role[]
+) => {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) {
+    throw new ActionError(
+      "Unauthorized",
+      "You must be logged in to access this resource."
+    );
+  }
+  // Check the user has the required role. Admins can access all resources.
+  const userRole = session.user.role;
+  if (!allowedRoles.includes(userRole) && userRole !== Role.admin) {
+    throw new ActionError(
+      "Forbidden",
+      "You are not authorized to access this resource."
+    );
+  }
+  return session;
+};
+
+/**
  * Analyzes the raw error and the request, and returns the appropriate response
  * status code and error response body.
  * @param req Next.js HTTP Request
@@ -117,11 +134,12 @@ const getErrorResponse = (req: NextApiRequest, e: Error): [number, Error] => {
       },
     ];
   }
+  // Catch ActionErrors and return them as JSON
+  if (e instanceof ActionError) {
+    return [e.getStatus(), e.toJSON()];
+  }
   // Return 409 when a foreign key constraint violation occurs
-  if (
-    e instanceof Prisma.PrismaClientKnownRequestError &&
-    (isForeignKeyConstraintViolation(e) || isUniqueConstraintViolation(e))
-  ) {
+  if (isForeignKeyConstraintViolation(e) || isUniqueConstraintViolation(e)) {
     return [
       409,
       {
@@ -131,10 +149,7 @@ const getErrorResponse = (req: NextApiRequest, e: Error): [number, Error] => {
     ];
   }
   // Return 400 when a missing related record error occurs
-  if (
-    e instanceof Prisma.PrismaClientKnownRequestError &&
-    isMissingRelatedRecord(e)
-  ) {
+  if (isMissingRelatedRecord(e)) {
     if (req.method === "DELETE") {
       return [
         404,
@@ -151,10 +166,6 @@ const getErrorResponse = (req: NextApiRequest, e: Error): [number, Error] => {
         message: "One or more of the related records does not exist",
       },
     ];
-  }
-  // Catch ActionErrors and return them as JSON
-  if (e instanceof ActionError) {
-    return [e.getStatus(), e.toJSON()];
   }
   // Return 500 when an unexpected error occurs
   return [500, e];
