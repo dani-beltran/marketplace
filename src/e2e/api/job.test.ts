@@ -28,6 +28,7 @@ describe("GET Jobs", () => {
       })
     );
     const jobs = [];
+    // Jobs published by the client user
     for (let i = 0; i < 15; i++) {
       jobs.push(
         createJob(
@@ -38,6 +39,15 @@ describe("GET Jobs", () => {
         )
       );
     }
+    // Job published by the another user
+    jobs.push(
+      createJob(
+        getMockJobInput({
+          name: `${namingPrefix}job for contractor`,
+          userId: contractorUser.id,
+        })
+      )
+    );
     await Promise.all(jobs);
   });
 
@@ -74,6 +84,16 @@ describe("GET Jobs", () => {
       pageSize: 11,
       count: expect.any(Number),
     });
+  });
+
+  it("should return 200 and a list of jobs for a specific user when requested", async () => {
+    const response = await httpRequest.get<
+      any,
+      AxiosResponse<PaginatedResponse<Job>>
+    >(endpointUrl + `?userId=${contractorUser.id}`);
+    expect(response.status).toBe(200);
+    const { data } = response.data;
+    expect(data).toHaveLength(1);
   });
 });
 

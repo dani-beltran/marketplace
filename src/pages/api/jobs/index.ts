@@ -1,14 +1,16 @@
 import { Job } from "@/lib/prisma-client";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { object, string, InferType } from "yup";
+import { object, string, InferType, number } from "yup";
 import { runController } from "@/utils/controller";
-import { countJobs, createJob, getJobs } from "@/models/job";
+import { countJobs, createJob, getJobs, getUserJobs } from "@/models/job";
 import {
   PaginatedResponse,
   PaginationParams,
   getPaginationSchema,
 } from "@/utils/pagination";
 import { Role } from "@/models/user";
+
+type ListJobsQuery = { userId?: number } & PaginationParams;
 
 export default async function handler(
   req: NextApiRequest,
@@ -18,24 +20,26 @@ export default async function handler(
 
   switch (method) {
     // TODO: Handle filtering (by dates, by name)
-    // TODO: Add filter to show only jobs created by user
     case "GET":
       const searchParamsSchema = getPaginationSchema({
         orderByOpts: ["createdAt", "updatedAt"],
       });
-      await runController<PaginationParams, PaginatedResponse<Job>>({
+      await runController<ListJobsQuery, PaginatedResponse<Job>>({
         // Anybody can see the jobs in the platform
         authentication: [],
         validation: {
-          schema: searchParamsSchema,
+          schema: object({
+            userId: number(), // It is possible to filter by the user who published it
+            ...searchParamsSchema,
+          }),
         },
         req,
         res,
         action: async ({ validatedInput: input }) => {
-          const [jobs, count] = await Promise.all([
-            getJobs(input),
-            countJobs(),
-          ]);
+          const fetchJobs = input.userId
+            ? getUserJobs(input.userId, input)
+            : getJobs(input);
+          const [jobs, count] = await Promise.all([fetchJobs, countJobs()]);
           const response: PaginatedResponse<Job> = {
             data: jobs,
             pagination: {
