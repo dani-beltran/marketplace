@@ -20,10 +20,9 @@ export default async function handler(
     // TODO: Handle filtering (by dates, by name)
     // TODO: Add filter to show only jobs created by user
     case "GET":
-      const searchParamsSchema = getPaginationSchema([
-        "createdAt",
-        "updatedAt",
-      ]);
+      const searchParamsSchema = getPaginationSchema({
+        orderByOpts: ["createdAt", "updatedAt"],
+      });
       await runController<PaginationParams, PaginatedResponse<Job>>({
         // Anybody can see the jobs in the platform
         authentication: [],
@@ -32,7 +31,7 @@ export default async function handler(
         },
         req,
         res,
-        action: async ({validatedInput: input}) => {
+        action: async ({ validatedInput: input }) => {
           const [jobs, count] = await Promise.all([
             getJobs(input),
             countJobs(),
@@ -41,8 +40,8 @@ export default async function handler(
             data: jobs,
             pagination: {
               page: input.page,
-              size: input.size,
-              total: count,
+              pageSize: input.pageSize,
+              count,
             },
           };
           return response;
@@ -63,7 +62,7 @@ export default async function handler(
         },
         req,
         res,
-        action: async ({validatedInput: input, session}) => {
+        action: async ({ validatedInput: input, session }) => {
           // Only the logged-in user can create a job posting
           const userId = session!.user.id;
           const jobInput = {

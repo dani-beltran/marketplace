@@ -20,15 +20,21 @@ export const getJob = async (id: number) => {
   return job;
 };
 
+/**
+ * Get all jobs.
+ * You can use the pagination params to paginate the results.
+ * First page starts at 0.
+ * @returns 
+ */
 export const getJobs = async ({
-  size,
+  pageSize,
   page,
   orderBy,
   order,
 }: PaginationParams): Promise<Job[]> => {
   const jobs = await db.job.findMany({
-    take: size,
-    skip: size * (page - 1),
+    take: pageSize,
+    skip: pageSize * page,
     orderBy: {
       [orderBy]: order,
     },
@@ -36,14 +42,20 @@ export const getJobs = async ({
   return jobs;
 };
 
+/**
+ * Get all the jobs a user has created.
+ * You can use the pagination params to paginate the results.
+ * First page starts at 0.
+ * @returns 
+ */
 export const getUserJobs = async (
   userId: number,
-  { size, page, orderBy, order }: PaginationParams
+  { pageSize, page, orderBy, order }: PaginationParams
 ) => {
   const jobs = await db.job.findMany({
     where: { userId },
-    take: size,
-    skip: size * (page - 1),
+    take: pageSize,
+    skip: pageSize * page,
     orderBy: {
       [orderBy]: order,
     },
