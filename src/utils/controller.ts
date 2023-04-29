@@ -13,6 +13,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../pages/api/auth/[...nextauth]";
 import { Session } from "next-auth";
 import { Role } from "@/models/user";
+import { monitor } from "./monitoring";
 
 type ControllerParams<T_Input, T_Output> = {
   authentication?: Role[];
@@ -51,29 +52,29 @@ export const runController = async <
   res,
   action,
 }: ControllerParams<T_Input, T_Output>): Promise<void> => {
-  // If authentication is required check there is a valid session
-  let session: Session | null = null;
-  if (authentication?.length) {
-    session = await getServerSession(req, res, authOptions);
-    if (!session) {
-      res.status(401).json({
-        name: "Unauthorized",
-        message: "You must be logged in to access this resource.",
-      });
-      return;
-    }
-    // Check the user has the required role. Admins can access all resources.
-    const userRole = session.user.role;
-    if (!authentication.includes(userRole) && userRole !== Role.admin) {
-      res.status(403).json({
-        name: "Forbidden",
-        message: "You are not authorized to access this resource.",
-      });
-      return;
-    }
-  }
-  // Validation is always required, validate the request body or query params
+  let statusCode = 500;
+  const startTime = Date.now();
   try {
+    // If authentication is required check there is a valid session
+    let session: Session | null = null;
+    if (authentication?.length) {
+      session = await getServerSession(req, res, authOptions);
+      if (!session) {
+        throw new ActionError(
+          "Unauthorized",
+          "You must be logged in to access this resource."
+        );
+      }
+      // Check the user has the required role. Admins can access all resources.
+      const userRole = session.user.role;
+      if (!authentication.includes(userRole) && userRole !== Role.admin) {
+        throw new ActionError(
+          "Forbidden",
+          "You are not authorized to access this resource."
+        );
+      }
+    }
+    // Validation is always required, validate the request body or query params
     const values = req.method === "GET" ? req.query : req.body;
     const validatedInput = await validation.schema.validate(values, {
       abortEarly: true,
@@ -81,17 +82,25 @@ export const runController = async <
     });
     // Run the action
     const resBody = await action({ req, validatedInput, session });
-    res.status(200).json(resBody);
+    statusCode = 200;
+    res.status(statusCode).json(resBody);
   } catch (e) {
     const error = e as Error;
-    const [statusCode, errorResponse] = getErrorResponse(req, error);
+    let errorResponse: Error;
+    [statusCode, errorResponse] = getErrorResponse(req, error);
     log(errorResponse.name, errorResponse.message, "error");
     res.status(statusCode).json(errorResponse);
+  } finally {
+    monitor({
+      startTime,
+      statusCode,
+      req,
+    });
   }
 };
 
 /**
- * Analyzes the raw error and the request, and returns the appropriate response 
+ * Analyzes the raw error and the request, and returns the appropriate response
  * status code and error response body.
  * @param req Next.js HTTP Request
  * @param e Raw error
@@ -113,10 +122,13 @@ const getErrorResponse = (req: NextApiRequest, e: Error): [number, Error] => {
     e instanceof Prisma.PrismaClientKnownRequestError &&
     (isForeignKeyConstraintViolation(e) || isUniqueConstraintViolation(e))
   ) {
-    return [409,{
-      name: "ForeignKeyConstraintViolation",
-      message: "Violates a foreign key constraint, like uniqueness",
-    }];
+    return [
+      409,
+      {
+        name: "ForeignKeyConstraintViolation",
+        message: "Violates a foreign key constraint, like uniqueness",
+      },
+    ];
   }
   // Return 400 when a missing related record error occurs
   if (
@@ -124,15 +136,21 @@ const getErrorResponse = (req: NextApiRequest, e: Error): [number, Error] => {
     isMissingRelatedRecord(e)
   ) {
     if (req.method === "DELETE") {
-      return [404, {
-        name: "NotFound",
-        message: "The record does not exist",
-      }];
+      return [
+        404,
+        {
+          name: "NotFound",
+          message: "The record does not exist",
+        },
+      ];
     }
-    return [400, {
-      name: "MissingRelatedRecord",
-      message: "One or more of the related records does not exist",
-    }];
+    return [
+      400,
+      {
+        name: "MissingRelatedRecord",
+        message: "One or more of the related records does not exist",
+      },
+    ];
   }
   // Catch ActionErrors and return them as JSON
   if (e instanceof ActionError) {
