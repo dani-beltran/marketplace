@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { ValidationError, Schema } from "yup";
 import { log } from "./logging";
-import { Prisma } from "@/lib/prisma-client";
 import {
+  isDeadlockError,
   isForeignKeyConstraintViolation,
   isMissingRelatedRecord,
   isUniqueConstraintViolation,
@@ -124,6 +124,10 @@ const handleAuth = async (
  * @returns [number, Error] The status code and error response body
  */
 const getErrorResponse = (req: NextApiRequest, e: Error): [number, Error] => {
+  // Catch ActionErrors and return them as JSON
+  if (e instanceof ActionError) {
+    return [e.getStatus(), e.toJSON()];
+  }
   // Return 400 when a validation error occurs
   if (e instanceof ValidationError) {
     return [
@@ -133,10 +137,6 @@ const getErrorResponse = (req: NextApiRequest, e: Error): [number, Error] => {
         message: e.message,
       },
     ];
-  }
-  // Catch ActionErrors and return them as JSON
-  if (e instanceof ActionError) {
-    return [e.getStatus(), e.toJSON()];
   }
   // Return 409 when a foreign key constraint violation occurs
   if (isForeignKeyConstraintViolation(e) || isUniqueConstraintViolation(e)) {
@@ -164,6 +164,16 @@ const getErrorResponse = (req: NextApiRequest, e: Error): [number, Error] => {
       {
         name: "MissingRelatedRecord",
         message: "One or more of the related records does not exist",
+      },
+    ];
+  }
+  // Return 503 when any temporary issue in our server or database occurs
+  if (isDeadlockError(e)) {
+    return [
+      503,
+      {
+        name: "Overloaded",
+        message: "Our service is overloaded, please try again later",
       },
     ];
   }

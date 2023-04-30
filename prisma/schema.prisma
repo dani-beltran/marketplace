@@ -57,6 +57,7 @@ model User {
   postedJobs            Job[]
   accounts              Account[]
   sessions              Session[]
+  wallet                Wallet?
 }
 
 model VerificationToken {
@@ -94,6 +95,7 @@ model Contract {
   clientId     Int
   job          Job            @relation(fields: [jobId], references: [id])
   jobId        Int            @unique
+  invoices     Invoice[]
 }
 
 model Job {
@@ -107,4 +109,40 @@ model Job {
   user        User      @relation(fields: [userId], references: [id])
   userId      Int
   contract    Contract?
+}
+
+model Wallet {
+  id        Int       @id @default(autoincrement())
+  balance   String    @default("0.00")
+  currency  String    @default("USD")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+  deletedAt DateTime?
+  userId    Int       @unique
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+enum InvoiceStatus {
+  pending
+  paid
+  failed
+  cancelled
+}
+
+model Invoice {
+  id           Int           @id @default(autoincrement())
+  number       String
+  date         DateTime
+  dueDate      DateTime
+  status       InvoiceStatus @default(pending)
+  subtotal     String
+  vatRate      Int           @default(0)
+  discountRate Int           @default(0)
+  currency     String        @default("USD")
+  paidAt       DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
+  deletedAt    DateTime?
+  contractId   Int
+  contract     Contract      @relation(fields: [contractId], references: [id])
 }

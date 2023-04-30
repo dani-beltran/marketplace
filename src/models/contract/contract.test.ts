@@ -2,7 +2,6 @@ import ActionError from "@/utils/ActionError";
 import { validateContractInput } from ".";
 import { getMockContractInput } from "@/utils/mocks/contract";
 import { LocalDate } from "@js-joda/core";
-import currency from "currency.js";
 
 describe("validateContract", () => {
   it("should return true if the contract is valid", () => {
@@ -181,7 +180,6 @@ describe("validateContract", () => {
     });
     try {
       validateContractInput(contract);
-      console.log(currency(contract.totalCost));
       expect(true).toBe(false);
     } catch (error) {
       expect((<ActionError>error).message).toBe(

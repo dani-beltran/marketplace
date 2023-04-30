@@ -8,15 +8,8 @@ import { Prisma, User } from "@/lib/prisma-client";
  * DANGEROUS - USE WITH CAUTION
  */
 export const flushDB = async () => {
-  await db.$executeRaw`DELETE FROM "Contract"`;
-  await db.$executeRaw`DELETE FROM "Job"`;
-  await db.$executeRaw`DELETE FROM "Session"`;
-  await db.$executeRaw`DELETE FROM "Account"`;
-  await db.$executeRaw`DELETE FROM "VerificationToken"`;
-  await db.$executeRaw`DELETE FROM "User"`;
-  // Using DELETE FROM because using SQLite at the moment
-  // TODO: Use TRUNCATE when using PostgreSQL
-  // await db.$executeRaw`TRUNCATE "User" CASCADE`;
+  await db.$executeRaw`TRUNCATE "VerificationToken" CASCADE`;
+  await db.$executeRaw`TRUNCATE "User" CASCADE`;
 };
 
 /**
@@ -25,6 +18,14 @@ export const flushDB = async () => {
  */
 export const deleteTestData = async (users: User[]) => {
   const userIds = users.filter((u) => u !== undefined).map((u) => u.id);
+  await db.$executeRaw`DELETE FROM "Wallet" WHERE "userId" IN (${Prisma.join(userIds)})`;
+  await db.$executeRaw`DELETE FROM "Invoice" 
+    WHERE "contractId" IN (
+      SELECT id FROM "Contract"
+      WHERE "Contract"."clientId" IN (${Prisma.join(
+        userIds
+      )}) OR "Contract"."contractorId" IN (${Prisma.join(userIds)})
+    )`;
   await db.$executeRaw`DELETE FROM "Contract" WHERE "clientId" IN (${Prisma.join(
     userIds
   )}) OR "contractorId" IN (${Prisma.join(userIds)})`;

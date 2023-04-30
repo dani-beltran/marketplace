@@ -1,4 +1,3 @@
-import { currencyRegExp } from "@/config/currencies";
 import db from "@/db-client";
 import { Contract, Prisma } from "@/lib/prisma-client";
 import ActionError from "@/utils/ActionError";
@@ -9,6 +8,7 @@ import {
 } from "@/utils/datetime-helpers";
 import { LocalDate } from "@js-joda/core";
 import currency from "currency.js";
+import { validateCurrency } from "../wallet";
 
 /**
  * TODO: Add pagination
@@ -93,8 +93,8 @@ export const validateContractInput = (contract: Prisma.ContractCreateInput) => {
   const startDate = new Date(contract.startDate);
   const endDate = new Date(contract.endDate);
 
-   // Can't create a contract for yourself
-   if (contract.contractor.connect?.id === contract.client.connect?.id) {
+  // Can't create a contract for yourself
+  if (contract.contractor.connect?.id === contract.client.connect?.id) {
     throw new ActionError(
       "BadRequest",
       "The contractor and client cannot be the same person"
@@ -110,15 +110,24 @@ export const validateContractInput = (contract: Prisma.ContractCreateInput) => {
   }
   // Check if the contract is starting after it ends
   if (startDate > endDate) {
-    throw new ActionError("BadRequest", "The contract is starting after it ends");
+    throw new ActionError(
+      "BadRequest",
+      "The contract is starting after it ends"
+    );
   }
   // Check if hourly rate is set if hours per week is set
   if (contract.hoursPerWeek && !contract.hourlyRate) {
-    throw new ActionError("BadRequest", "The contract is missing an hourly rate");
+    throw new ActionError(
+      "BadRequest",
+      "The contract is missing an hourly rate"
+    );
   }
   // Check if hourly rate is set if total hours is set
   if (contract.totalHours && !contract.hourlyRate) {
-    throw new ActionError("BadRequest", "The contract is missing an hourly rate");
+    throw new ActionError(
+      "BadRequest",
+      "The contract is missing an hourly rate"
+    );
   }
   // Check if total hours is set if hours per week is set
   if (contract.hoursPerWeek && !contract.totalHours) {
@@ -147,7 +156,7 @@ export const validateContractInput = (contract: Prisma.ContractCreateInput) => {
     );
   }
   // Check if the contract has an invalid total cost
-  if (currencyRegExp.test(contract.totalCost) === false) {
+  if (validateCurrency(contract.totalCost) === false) {
     throw new ActionError(
       "BadRequest",
       "The contract total cost has the wrong format"

@@ -47,3 +47,18 @@ export const isForeignKeyConstraintViolation = (e: unknown) => {
     return true;
   }
 };
+
+/**
+ * @returns true if the error is a Prisma Error for transaction failed due to deadlock
+ */
+export const isDeadlockError = (e: unknown) => {
+  if (
+    e &&
+    typeof e === "object" &&
+    "code" in e &&
+    // PrismaClientUnknownRequestError for transaction failed due to deadlock
+    e.code === "P2034"
+  ) {
+    return true;
+  }
+}
