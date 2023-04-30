@@ -37,13 +37,18 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+enum UserRole {
+  admin
+  user
+}
+
 model User {
   id                    Int        @id @default(autoincrement())
   email                 String     @unique
   emailVerified         DateTime?
   name                  String?
   image                 String?
-  role                  String     @default("user")
+  role                  UserRole   @default(user)
   createdAt             DateTime   @default(now())
   updatedAt             DateTime   @default(now()) @updatedAt
   deletedAt             DateTime?
@@ -62,26 +67,33 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+enum ContractStatus {
+  pending // Awaiting client and contractor approval
+  accepted // Client and contractor have accepted
+  completed // Contract has been completed and fully paid
+  terminated // Contract has been terminated by either party
+}
+
 model Contract {
-  id           Int       @id @default(autoincrement())
+  id           Int            @id @default(autoincrement())
   name         String
   terms        String
-  status       String
+  status       ContractStatus @default(pending)
   startDate    DateTime
   endDate      DateTime
   hourlyRate   String?
   hoursPerWeek Int?
   totalHours   Int?
   totalCost    String
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @default(now()) @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @default(now()) @updatedAt
   deletedAt    DateTime?
-  contractor   User      @relation("contractor", fields: [contractorId], references: [id])
+  contractor   User           @relation("contractor", fields: [contractorId], references: [id])
   contractorId Int
-  client       User      @relation("client", fields: [clientId], references: [id])
+  client       User           @relation("client", fields: [clientId], references: [id])
   clientId     Int
-  job          Job       @relation(fields: [jobId], references: [id])
-  jobId        Int       @unique
+  job          Job            @relation(fields: [jobId], references: [id])
+  jobId        Int            @unique
 }
 
 model Job {

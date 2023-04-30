@@ -11,14 +11,16 @@
 //
 import { mixed, number, string } from "yup";
 
-export type PaginationValidatedParams = {
+// For query pagination params we make all the fields optional, since they
+// will be validated from the schema and added the default values.
+export type PaginationQueryParams = Partial<PaginationParams>
+
+export type PaginationParams = {
   pageSize: number;
   page: number;
   orderBy: string;
   order: "asc" | "desc";
 };
-
-export type PaginationParams = Partial<PaginationValidatedParams>
 
 export type PaginatedResponse<T> = {
   data: T[];
@@ -46,6 +48,41 @@ export const getPaginationSchema = (
     pageSize: number().min(10).default(10),
     page: number().min(0).default(0),
     orderBy: string().matches(orderByOptsRegExp).default("createdAt"),
+    order: mixed<"asc" | "desc">().oneOf(["asc", "desc"]).default("desc"),
+  };
+};
+
+//
+// CURSOR PAGINATION
+//
+export type CursorPaginationParams = {
+  orderBy: "createdAt" | "updatedAt";
+  order: "asc" | "desc";
+  cursorId?: number;
+  take: number; // How many records to take. Negative values will return the previous records.
+};
+
+export type CursorPaginationQueryParams = Partial<CursorPaginationParams>;
+
+export type CursorPaginatedResponse<T> = {
+  data: T[];
+  pagination: CursorPagination;
+};
+
+export type CursorPagination = {
+  cursorId: number;
+};
+
+/**
+ * The pagination schema is used to validate the query params for pagination.
+ * @param orderByOpts
+ * @returns
+ */
+export const getCursorPaginationSchema = () => {
+  return {
+    take: number().default(10),
+    cursorId: number(),
+    orderBy: mixed<"createdAt" | "updatedAt">().oneOf(['createdAt', 'updatedAt']).default("createdAt"),
     order: mixed<"asc" | "desc">().oneOf(["asc", "desc"]).default("desc"),
   };
 };

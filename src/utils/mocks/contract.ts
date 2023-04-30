@@ -4,7 +4,7 @@
 // You can expand this file to include other mocked Contract with different default values.
 //
 
-import type { Prisma } from "@/lib/prisma-client";
+import { Prisma } from "@/lib/prisma-client";
 import { LocalDate } from "@js-joda/core";
 
 type Relations = Partial<{
@@ -28,7 +28,7 @@ export const getMockContractInput = (
     hoursPerWeek: 40,
     totalHours: 100,
     totalCost: "10000",
-    status: "active",
+    status: "pending",
   };
   delete overrides.contractorId;
   delete overrides.clientId;

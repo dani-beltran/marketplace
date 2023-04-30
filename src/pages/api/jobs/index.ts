@@ -11,14 +11,16 @@ import {
 } from "@/models/job";
 import {
   PaginatedResponse,
+  PaginationQueryParams,
   PaginationParams,
-  PaginationValidatedParams,
   getPaginationSchema,
 } from "@/utils/pagination";
 import { Role } from "@/models/user";
 
-type GetJobsValidatedQuery = { userId?: number } & PaginationValidatedParams;
-export type GetJobsQuery = { userId?: number } & PaginationParams;
+type JobsFilters = {
+  userId?: number;
+};
+export type GetJobsQuery = JobsFilters & PaginationQueryParams;
 
 const createJobSchema = object({
   name: string().required(),
@@ -36,16 +38,18 @@ export default async function handler(
   switch (method) {
     // TODO: Handle filtering (by dates, by name)
     case "GET":
-      const searchParamsSchema = getPaginationSchema({
-        orderByOpts: ["createdAt", "updatedAt"],
-      });
-      await runController<GetJobsValidatedQuery, PaginatedResponse<Job>>({
+      await runController<
+        JobsFilters & PaginationParams,
+        PaginatedResponse<Job>
+      >({
         // Anybody can see the jobs in the platform
         authentication: [],
         validation: {
           schema: object({
-            userId: number(), // It is possible to filter by the user who published it
-            ...searchParamsSchema,
+            userId: number(),
+            ...getPaginationSchema({
+              orderByOpts: ["createdAt", "updatedAt"],
+            }),
           }),
         },
         req,
@@ -54,6 +58,7 @@ export default async function handler(
           let jobs: Job[];
           let count: number;
           if (input.userId) {
+            // If a filter by userId is provided, we only show the jobs published by that user
             [jobs, count] = await Promise.all([
               getUserJobs(input.userId, input),
               countUserJobs(input.userId),
