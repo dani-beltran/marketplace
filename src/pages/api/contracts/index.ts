@@ -1,4 +1,4 @@
-import { Contract } from "@/lib/prisma-client";
+import { Contract, ContractStatus } from "@/lib/prisma-client";
 import {
   createContract,
   getAllContracts,
@@ -72,7 +72,7 @@ export default async function handler(
             name: input.name,
             terms: input.terms,
             totalCost: input.totalCost,
-            status: "pending",
+            status: ContractStatus.pending,
             hourlyRate: input.hourlyRate,
             hoursPerWeek: input.hoursPerWeek,
             totalHours: input.totalHours,
