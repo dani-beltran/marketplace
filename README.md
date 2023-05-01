@@ -7,7 +7,12 @@ publish jobs and contractors offer their services.
 
 ## Getting Started
 
-First, start the DB:
+First, install dependencies running:
+```bash
+yarn
+```
+
+Second, start the DB:
 
 ```bash
 yarn start:db
@@ -15,7 +20,7 @@ yarn start:db
 
 A docker PostgreSQL DB container will start and will run the migrations.
 
-Second, run the development server:
+Then, run the development server:
 
 ```bash
 yarn dev
