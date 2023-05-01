@@ -69,3 +69,25 @@ export const deleteUser = async (id: number) => {
   });
   return deletedUser;
 };
+
+/**
+ * @param limit the number of users to return
+ * @returns a list of users ordered by the total amount paid
+ */
+export const getMostPaidUsers = async (limit = 10) => {
+  const rank = await db.$queryRaw`
+    SELECT  "User".id, "User"."name", "User"."image", SUM(
+      CAST("Invoice"."subtotal" AS FLOAT) + 
+      (CAST("Invoice"."subtotal" AS FLOAT) * "Invoice"."vatRate" / 100) -
+      (CAST("Invoice"."subtotal" AS FLOAT) * "Invoice"."discountRate" / 100)
+    ) as totalPaid
+    FROM "User"
+    INNER JOIN "Contract" ON "User"."id" = "Contract"."clientId"
+    INNER JOIN "Invoice" ON "Contract"."id" = "Invoice"."contractId"
+    WHERE "Invoice"."status" = 'paid' AND "Invoice"."paidAt" IS NOT NULL 
+    AND "User"."deletedAt" IS NULL AND "Invoice"."deletedAt" IS NULL
+    GROUP BY "User"."id"
+    ORDER BY totalPaid  DESC
+    LIMIT ${limit}`;
+  return rank;
+};
