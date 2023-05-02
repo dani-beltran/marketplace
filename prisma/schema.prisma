@@ -145,4 +145,6 @@ model Invoice {
   deletedAt    DateTime?
   contractId   Int
   contract     Contract      @relation(fields: [contractId], references: [id])
+
+  @@index([paidAt])
 }

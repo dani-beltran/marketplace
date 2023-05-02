@@ -1,7 +1,14 @@
-import { getMostPaidUsers } from "@/models/user";
+import { BestPayerUser, getBestPayerUsers } from "@/models/user";
 import { runController } from "@/utils/controller";
+import {
+  DateFilter,
+  LimitFilter,
+  getDateFilterSchema,
+  getLimitFilterSchema,
+} from "@/utils/filtering";
+import { LocalDate } from "@js-joda/core";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { mixed } from "yup";
+import { object } from "yup";
 
 export default async function handler(
   req: NextApiRequest,
@@ -11,16 +18,24 @@ export default async function handler(
 
   switch (method) {
     case "GET":
-      await runController<unknown, any>({
+      const aYearAgo = new Date(LocalDate.now().minusYears(1).toString());
+      await runController<DateFilter & LimitFilter, BestPayerUser[]>({
         // Anybody can see the best payer users in the platform
         authentication: [],
         validation: {
-          schema: mixed()
+          schema: object({
+            ...getLimitFilterSchema(10),
+            ...getDateFilterSchema(aYearAgo),
+          }),
         },
         req,
         res,
-        action: async () => {
-          const res = await getMostPaidUsers();
+        action: async ({ validatedInput: input }) => {
+          const res = await getBestPayerUsers(
+            input.startDate,
+            input.endDate,
+            input.limit
+          );
           return res;
         },
       });
