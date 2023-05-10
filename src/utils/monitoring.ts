@@ -15,4 +15,5 @@ export const monitor = ({startTime, req, statusCode}: MonitoringParams) => {
   const duration = endTime - startTime;
   // TODO: Send the data to a monitoring service like DataDog or New Relic
   console.info(`${req.method} ${req.url} responded ${statusCode} and took ${duration}ms`);
+  console.info(`Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024 * 100) / 100} MB`)
 }
